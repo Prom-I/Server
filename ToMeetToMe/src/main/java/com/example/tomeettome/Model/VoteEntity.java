@@ -16,7 +16,7 @@ import java.time.LocalDateTime;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-@Table(name = "Vote",uniqueConstraints = {@UniqueConstraint(columnNames = "userId")})
+@Table(name = "Vote")
 public class VoteEntity {
     @Id
     @GeneratedValue(generator = "system-uuid")

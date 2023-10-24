@@ -34,7 +34,7 @@ public class ScheduleEntity {
     private String endAt;
     private String allDay;
     private String memo;
-    private String repeat;
+    private String recurrence;
     private String complete;
 
     @UpdateTimestamp
