@@ -10,5 +10,5 @@ public class ToMeetToMeApplication {
         SpringApplication.run(ToMeetToMeApplication.class, args);
     }
 
-    
+
 }
