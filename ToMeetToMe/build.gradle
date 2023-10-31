@@ -34,12 +34,9 @@ dependencies {
     implementation 'org.springframework.boot:spring-boot-starter-web'
     implementation 'de.codecentric:spring-boot-admin-starter-client'
     implementation 'de.codecentric:spring-boot-admin-starter-server'
-<<<<<<< Updated upstream
-=======
     implementation group: 'io.jsonwebtoken', name: 'jjwt', version: '0.9.1'
     implementation('org.mnode.ical4j:ical4j:3.2.12')
     implementation 'net.fortuna.ical4j:ical4j:4.0.0'
->>>>>>> Stashed changes
     compileOnly 'org.projectlombok:lombok'
     developmentOnly 'org.springframework.boot:spring-boot-devtools'
     runtimeOnly 'com.mysql:mysql-connector-j'
