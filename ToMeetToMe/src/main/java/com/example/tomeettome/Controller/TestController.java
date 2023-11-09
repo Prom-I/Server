@@ -23,6 +23,10 @@ import java.util.Collections;
 @RequestMapping("/test")
 public class TestController {
 
+    @GetMapping
+    public void oAuthTest() {
+        log.info("test 입장!!!!!!!!");
+    }
     // TEST용 API
     @PostMapping
     public ResponseEntity<?> test(@RequestBody TestDTO dto) {

@@ -6,7 +6,6 @@ import org.hibernate.annotations.GenericGenerator;
 import org.hibernate.annotations.UpdateTimestamp;
 
 import javax.persistence.Entity;
-import javax.persistence.Column;
 import javax.persistence.UniqueConstraint;
 import javax.persistence.Table;
 import javax.persistence.Id;
@@ -29,6 +28,7 @@ public class UserEntity {
     private String userId;
     private String userName;
     private String image;
+    private String platform;
 
     @UpdateTimestamp
     private LocalDateTime lastModifiedAt;
