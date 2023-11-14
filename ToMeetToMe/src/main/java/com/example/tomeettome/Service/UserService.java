@@ -1,5 +1,6 @@
 package com.example.tomeettome.Service;
 
+import com.example.tomeettome.Model.UserEntity;
 import com.google.api.client.http.HttpTransport;
 import com.google.api.client.http.LowLevelHttpRequest;
 import com.google.api.client.http.javanet.NetHttpTransport;
@@ -8,6 +9,7 @@ import com.google.api.client.json.JsonGenerator;
 import com.google.api.client.json.JsonParser;
 import com.google.api.client.json.jackson2.JacksonFactory;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.io.*;
@@ -23,7 +25,8 @@ import com.google.api.client.googleapis.auth.oauth2.GoogleIdTokenVerifier;
 @Slf4j
 @Service
 public class UserService {
-    public void validateIdToken(String idTokenString) throws GeneralSecurityException, IOException {
+
+    public UserEntity validateIdToken(String idTokenString) throws GeneralSecurityException, IOException {
 
         GoogleIdTokenVerifier verifier = new GoogleIdTokenVerifier.Builder(getHttpTransport(), getJsonFactory())
                 // Specify the CLIENT_ID of the app that accesses the backend:
@@ -60,8 +63,15 @@ public class UserService {
             log.info("Family Name: " + familyName);
             log.info("Given Name: " + givenName);
 
+            UserEntity user = UserEntity.builder()
+                    .userName(name)
+                    .userId(email)
+                    .platform("Google")
+                    .build();
+            return user;
         } else {
             System.out.println("Invalid ID token.");
+            return null;
         }
     }
 
