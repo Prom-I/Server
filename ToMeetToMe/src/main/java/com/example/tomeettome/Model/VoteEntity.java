@@ -23,7 +23,7 @@ public class VoteEntity {
     @GenericGenerator(name = "system-uuid", strategy = "uuid")
     private String originKey;
     private String userOriginKey;
-    private String promiseOriginKey;
+    private String optionOriginKey;
 
     @UpdateTimestamp
     private LocalDateTime lastModifiedAt;

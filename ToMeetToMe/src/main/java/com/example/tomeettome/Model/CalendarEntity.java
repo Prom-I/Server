@@ -19,18 +19,16 @@ import java.time.LocalDateTime;
 @AllArgsConstructor
 @Data
 @Entity
-@Table(name = "Follow")
-public class FollowEntity {
+@Table(name = "Calendar")
+public class CalendarEntity {
     @Id
     @GeneratedValue(generator="system-uuid")
     @GenericGenerator(name="system-uuid", strategy="uuid")
     private String originKey;
-
-    private String followerId;
-    private String followingId;
 
     @UpdateTimestamp
     private LocalDateTime lastModifiedAt;
     @CreationTimestamp
     private LocalDateTime createdAt;
 }
+
