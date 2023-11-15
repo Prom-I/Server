@@ -2,8 +2,8 @@ server:
   port : 8080
 spring:
   datasource:
-    url: jdbc:mysql://localhost:3306/TMTM?useSSL=false
-    #    url: jdbc:mysql://ls-52bfd449394926c12c17858435de4a71085d20ac.cpqaprbpusy4.ap-northeast-2.rds.amazonaws.com:3306/TMTMDB
+#    url: jdbc:mysql://localhost:3306/TMTM?useSSL=false
+    url: jdbc:mysql://ls-52bfd449394926c12c17858435de4a71085d20ac.cpqaprbpusy4.ap-northeast-2.rds.amazonaws.com:3306/TMTMDB
     username: root
     password: Dhsk5656!
   jpa:

@@ -1,23 +1,17 @@
 package com.example.tomeettome.Service;
 
 import com.example.tomeettome.Model.UserEntity;
+import com.example.tomeettome.Repository.UserRepository;
 import com.google.api.client.http.HttpTransport;
-import com.google.api.client.http.LowLevelHttpRequest;
 import com.google.api.client.http.javanet.NetHttpTransport;
 import com.google.api.client.json.JsonFactory;
-import com.google.api.client.json.JsonGenerator;
-import com.google.api.client.json.JsonParser;
 import com.google.api.client.json.jackson2.JacksonFactory;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
-
 import java.io.*;
-import java.nio.charset.Charset;
 import java.security.GeneralSecurityException;
 import java.util.Arrays;
-import java.util.Collections;
-
 import com.google.api.client.googleapis.auth.oauth2.GoogleIdToken;
 import com.google.api.client.googleapis.auth.oauth2.GoogleIdToken.Payload;
 import com.google.api.client.googleapis.auth.oauth2.GoogleIdTokenVerifier;
@@ -25,6 +19,8 @@ import com.google.api.client.googleapis.auth.oauth2.GoogleIdTokenVerifier;
 @Slf4j
 @Service
 public class UserService {
+
+    @Autowired UserRepository userRepository;
 
     public UserEntity validateIdToken(String idTokenString) throws GeneralSecurityException, IOException {
 
@@ -70,7 +66,7 @@ public class UserService {
                     .build();
             return user;
         } else {
-            System.out.println("Invalid ID token.");
+            log.warn("Invalid ID token.");
             return null;
         }
     }
@@ -80,7 +76,25 @@ public class UserService {
     }
 
     private JsonFactory getJsonFactory() {
-        JsonFactory jsonFactory = new JacksonFactory(); // 예시로 JacksonFactory 사용
+        JsonFactory jsonFactory = new JacksonFactory(); //lo 예시로 JacksonFactory 사용
         return jsonFactory;
     }
+    
+    public UserEntity create(UserEntity user) {
+        if(user == null || user.getUserId() == null ) {
+            throw new RuntimeException("Invalid arguments");
+        }
+        final String id = user.getUserId();
+        if(userRepository.existsById(id)) {
+            log.warn("id already exists {}", id);
+            throw new RuntimeException("id already exists");
+        }
+        log.info("id 생성 완료! " + user);
+        return userRepository.save(user);
+    }
+
+    public boolean checkUserExists(String userId) {
+        return userRepository.existsById(userId);
+    }
+
 }

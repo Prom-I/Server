@@ -29,13 +29,14 @@ public class ScheduleEntity {
     private String originKey;
     private String calendarOriginKey;
     private String categoryOriginKey;
-    private String name;
-    private String startAt;
-    private String endAt;
+    private String summary; // 일정의 제목
+    private String description; // 일정의 상세설명
+    private String dtStart; //시작 시간
+    private String dtEnd; //종료시간
+    private String location;
+    private String rRule;
+    private String status;
     private String allDay;
-    private String memo;
-    private String recurrence;
-    private String complete;
 
     @UpdateTimestamp
     private LocalDateTime lastModifiedAt;

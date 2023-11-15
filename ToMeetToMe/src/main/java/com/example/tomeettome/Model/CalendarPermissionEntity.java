@@ -28,7 +28,7 @@ public class CalendarPermissionEntity {
     private String calendarOriginKey;
     private String ownerOriginKey; // userOriginKey 또는 groupOriginKey, 캘린더의 소유자
     private String ownerType; // user 또는 group
-    private String permissionLevel; // 관리자 또는 읽기전용
+    private String permissionLevel; // 관리자(admin) 또는 읽기전용(ReadOnly)
     private String userId; // 권한의 소유자
     @UpdateTimestamp
     private LocalDateTime lastModifiedAt;

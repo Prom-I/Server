@@ -25,7 +25,7 @@ public class CalendarEntity {
     @GeneratedValue(generator="system-uuid")
     @GenericGenerator(name="system-uuid", strategy="uuid")
     private String originKey;
-
+    private String componentType;
     @UpdateTimestamp
     private LocalDateTime lastModifiedAt;
     @CreationTimestamp
