@@ -4,6 +4,7 @@ import com.example.tomeettome.DTO.*;
 import com.example.tomeettome.Model.CalendarEntity;
 import com.example.tomeettome.Model.CalendarPermissionEntity;
 import com.example.tomeettome.Model.UserEntity;
+import com.example.tomeettome.Repository.UserRepository;
 import com.example.tomeettome.Security.TokenProvider;
 import com.example.tomeettome.Service.CalendarService;
 import com.example.tomeettome.Service.UserService;
@@ -20,6 +21,8 @@ import java.util.*;
 @RestController
 @RequestMapping("/user")
 public class UserController {
+    @Autowired
+    private UserRepository userRepository;
 
     @Autowired private UserService userService;
     @Autowired private CalendarService calendarService;
@@ -40,6 +43,9 @@ public class UserController {
 
         if (user != null) { // 회원가입 또는 로그인의 경우
             boolean result = userService.checkUserExists(user.getUserId());
+            log.info("로그인 인가요? "+result);
+            log.info("user.getUserID: "+user.getUserId());
+            log.info("userRepo "+userRepository.findByUserId(user.getUserId()).getUserId());
             if (result) { // 로그인
                 String token = tokenProvider.create(user);
                 UserDTO userDTO = UserDTO.builder()
@@ -47,6 +53,7 @@ public class UserController {
                         .userName(user.getUserName())
                         .token(token)
                         .build();
+                log.info("로그인 후 token 발급완료!" + token);
                 ResponseDTO<UserDTO> response = ResponseDTO.<UserDTO>builder().data(Collections.singletonList(userDTO)).status("success").build();
                 return ResponseEntity.ok().body(response);
             }

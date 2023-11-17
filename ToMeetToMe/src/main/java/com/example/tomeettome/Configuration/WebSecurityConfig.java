@@ -15,7 +15,7 @@ import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.web.filter.CorsFilter;
 
-//@SuppressWarnings("deprecation")
+@SuppressWarnings("deprecation")
 //@EnableWebSecurity
 @EnableWebSecurity(debug = true)
 @Slf4j
@@ -36,10 +36,10 @@ public class WebSecurityConfig extends WebSecurityConfigurerAdapter {
                 .sessionManagement().sessionCreationPolicy(SessionCreationPolicy.STATELESS)
                 .and()
                 .authorizeRequests()
-                .antMatchers("/","/user","/auth/**", "/login**", "/error**").permitAll()
-                .anyRequest()
-                .authenticated()
-                .and()
+                //.antMatchers("/","/test","/user","/auth/**", "/login**", "/error**").permitAll()
+                .anyRequest().permitAll()
+                //.authenticated()
+                //.and()
                 //.oauth2Login()
         ;
 

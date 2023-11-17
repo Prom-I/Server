@@ -85,7 +85,7 @@ public class UserService {
             throw new RuntimeException("Invalid arguments");
         }
         final String id = user.getUserId();
-        if(userRepository.existsById(id)) {
+        if(userRepository.existsByUserId(id)) {
             log.warn("id already exists {}", id);
             throw new RuntimeException("id already exists");
         }
@@ -94,7 +94,7 @@ public class UserService {
     }
 
     public boolean checkUserExists(String userId) {
-        return userRepository.existsById(userId);
+        return userRepository.existsByUserId(userId);
     }
 
 }
