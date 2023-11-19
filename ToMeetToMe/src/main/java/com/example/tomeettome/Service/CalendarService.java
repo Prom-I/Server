@@ -6,6 +6,7 @@ import com.example.tomeettome.Model.ScheduleEntity;
 import com.example.tomeettome.Model.UserEntity;
 import com.example.tomeettome.Repository.CalendarPermissionRepository;
 import com.example.tomeettome.Repository.CalendarRepository;
+import com.example.tomeettome.Repository.ScheduleRepository;
 import com.example.tomeettome.Repository.UserRepository;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -16,6 +17,7 @@ import org.springframework.stereotype.Service;
 public class CalendarService {
     @Autowired CalendarRepository calendarRepository;
     @Autowired CalendarPermissionRepository calendarPermissionRepository;
+    @Autowired ScheduleRepository scheduleRepository;
 
     public CalendarEntity createUserCalendar(UserEntity user) {
         CalendarEntity calendar = CalendarEntity.builder()
@@ -30,6 +32,10 @@ public class CalendarService {
                 .build();
         calendarPermissionRepository.save(calendarPermission);
         return calendarRepository.save(calendar);
+    }
+
+    public ScheduleEntity create(ScheduleEntity schedule) {
+        return scheduleRepository.save(schedule);
     }
 
 }
