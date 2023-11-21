@@ -1,5 +1,6 @@
 package com.example.tomeettome.Model;
 
+import com.example.tomeettome.DTO.CaldavDTO;
 import lombok.Builder;
 import lombok.NoArgsConstructor;
 import lombok.AllArgsConstructor;
@@ -43,4 +44,6 @@ public class ScheduleEntity {
 
     @CreationTimestamp
     private LocalDateTime createdAt;
+
+
 }

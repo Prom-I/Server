@@ -27,7 +27,7 @@ public class PreferenceEntity {
     @GeneratedValue(generator="system-uuid")
     @GenericGenerator(name="system-uuid", strategy="uuid")
     private String originKey;
-    private String groupOriginKey;
+    private String teamOriginKey;
     private String name;
     private String startAt;
     private String endAt;

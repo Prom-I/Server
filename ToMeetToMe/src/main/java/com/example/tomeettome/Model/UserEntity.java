@@ -34,5 +34,7 @@ public class UserEntity {
     private LocalDateTime lastModifiedAt;
     @CreationTimestamp
     private LocalDateTime createdAt;
+
+
 }
 

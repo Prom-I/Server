@@ -4,9 +4,11 @@ import com.example.tomeettome.DTO.*;
 import com.example.tomeettome.Model.CalendarEntity;
 import com.example.tomeettome.Model.CalendarPermissionEntity;
 import com.example.tomeettome.Model.UserEntity;
+import com.example.tomeettome.Repository.CalendarPermissionRepository;
 import com.example.tomeettome.Repository.UserRepository;
 import com.example.tomeettome.Security.TokenProvider;
 import com.example.tomeettome.Service.CalendarService;
+import com.example.tomeettome.Service.CategoryService;
 import com.example.tomeettome.Service.UserService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -21,12 +23,11 @@ import java.util.*;
 @RestController
 @RequestMapping("/user")
 public class UserController {
-    @Autowired
-    private UserRepository userRepository;
 
     @Autowired private UserService userService;
     @Autowired private CalendarService calendarService;
     @Autowired private TokenProvider tokenProvider;
+    @Autowired private CategoryService categoryService;
 
     /***
      * Validation ID Token & Authentication
@@ -81,7 +82,9 @@ public class UserController {
         UserEntity user = dto.toEntity(dto);
         try {
             user = userService.create(user);
-            CalendarEntity calendar = calendarService.createUserCalendar(user);
+            CalendarEntity calendar = calendarService.createUserCalendar(user); // Calendar 생성
+            calendarService.createUserCalendarPermission(user,calendar); // CalendarPermission 생성
+            categoryService.init(calendar); // Default Category 생성
 
             CalendarDTO calendarDTO = CalendarDTO.builder()
                     .originKey(calendar.getOriginKey())

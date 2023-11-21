@@ -2,6 +2,8 @@ package com.example.tomeettome.Controller;
 
 import com.example.tomeettome.DTO.ResponseDTO;
 import com.example.tomeettome.DTO.TestDTO;
+import com.example.tomeettome.DTO.UserDTO;
+import com.example.tomeettome.Security.TokenProvider;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
 import net.fortuna.ical4j.data.CalendarBuilder;
@@ -10,6 +12,7 @@ import net.fortuna.ical4j.model.*;
 import net.fortuna.ical4j.model.property.DtStart;
 import net.fortuna.ical4j.model.property.ProdId;
 import net.fortuna.ical4j.model.property.Version;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -23,6 +26,7 @@ import java.util.Collections;
 @RequestMapping("/test")
 public class TestController {
 
+    @Autowired TokenProvider tokenProvider;
     @GetMapping
     public void oAuthTest() {
         log.info("test 입장!!!!!!!!");
@@ -39,33 +43,43 @@ public class TestController {
         return ResponseEntity.ok().body(response);
     }
 
-    @PutMapping
+    @PostMapping("/login")
+    public ResponseEntity<?> tesst(@RequestBody UserDTO dto){
+        UserDTO userDTO = UserDTO.builder()
+                .userId(dto.getUserId())
+                .userName(dto.getUserName())
+                .token(tokenProvider.create(dto.toEntity(dto)))
+                .build();
+        ResponseDTO<UserDTO> response = ResponseDTO.<UserDTO>builder().data(Collections.singletonList(userDTO)).status("success").build();
+        return ResponseEntity.ok().body(response);
+    }
+
+    @PutMapping(consumes = "text/calendar")
     public ResponseEntity<?> caldavTest(@RequestBody String calendarString) throws ParserException, IOException, ParseException {
 
-//        StringReader sin = new StringReader(calendarString);
-//        CalendarBuilder builder = new CalendarBuilder();
-//        Calendar calendar = builder.build(sin);
+        StringReader sin = new StringReader(calendarString);
+        CalendarBuilder builder = new CalendarBuilder();
+        Calendar calendar = builder.build(sin);
+
+        log.info(String.valueOf(calendar.getComponent("VEVENT").getProperty(Property.SUMMARY).getClass().getSimpleName()));
+
+        String a  = calendar.getComponent("VEVENT").getProperty(Property.DTSTAMP).getValue();
+        DateTime dateTime = new DateTime(a);
+//        Object obj = calendar.getComponent("VEVENT").getProperty(Property.DTSTAMP);
+//        log.info(obj.getClass().getName());
+
+        log.info("dtstamp = " + a );
+
+//        for (Component component : calendar.getComponents()) {
+////            log.info("Component : " + component.getName());
 //
-//        log.info(String.valueOf(calendar.getComponent("VEVENT").getProperty(Property.SUMMARY).getClass().getSimpleName()));
+//            for (Property property : component.getProperties()) {
+////                log.info("Property : " + property.getName() + " Value: " + property.getValue());
+//                log.info(String.valueOf(component.getProperty(Property.DTSTAMP)));
+//                log.info(String.valueOf(component.getProperty(Property.DTSTAMP).getClass().getSimpleName()));
 //
-//        String a  = calendar.getComponent("VEVENT").getProperty(Property.DTSTAMP).getValue();
-//        DateTime dateTime = new DateTime(a);
-//        dateTime.
-////        Object obj = calendar.getComponent("VEVENT").getProperty(Property.DTSTAMP);
-////        log.info(obj.getClass().getName());
-//
-//        log.info("dtstamp = " + a );
-//
-////        for (Component component : calendar.getComponents()) {
-//////            log.info("Component : " + component.getName());
-////
-////            for (Property property : component.getProperties()) {
-//////                log.info("Property : " + property.getName() + " Value: " + property.getValue());
-////                log.info(String.valueOf(component.getProperty(Property.DTSTAMP)));
-////                log.info(String.valueOf(component.getProperty(Property.DTSTAMP).getClass().getSimpleName()));
-////
-////            }
-////        }
+//            }
+//        }
 
         Calendar calendar2 = new Calendar();
         calendar2.getProperties().add(Version.VERSION_2_0);
@@ -74,4 +88,6 @@ public class TestController {
         String calendarString2 = calendar2.toString();
         return ResponseEntity.ok().body(calendarString2);
     }
+
+
 }
