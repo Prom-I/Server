@@ -41,6 +41,7 @@ public class ScheduleController {
                                     @RequestBody String component) throws ParserException, IOException {
         try {
             CaldavDTO dto = new CaldavDTO(component);
+
             ScheduleEntity entity = dto.toEntity(dto);
             entity.setIcsFileName(icsFileName);
             String categories = dto.getValue(component, "CATEGORIES");
@@ -61,13 +62,19 @@ public class ScheduleController {
     @PutMapping("/update/{icsFileName}")
     public ResponseEntity<?> update(@PathVariable("icsFileName") String icsFileName,
                                     @RequestBody String calendarString) throws ParserException, IOException {
-        CaldavDTO dto = new CaldavDTO(calendarString);
-        ScheduleEntity entity = dto.toEntity(dto);
-        entity.setCategoryOriginKey(categoryService.findOriginKeyByName(dto.getValue(calendarString, "CATEGORIES")));
-        calendarService.update(entity);
+        try {
+            CaldavDTO dto = new CaldavDTO(calendarString);
+            ScheduleEntity entity = dto.toEntity(dto);
 
-        // 204 : No Content
-        return ResponseEntity.status(204).body(null);
+            entity.setCategoryOriginKey(categoryService.findOriginKeyByName(dto.getValue(calendarString, "CATEGORIES")));
+            calendarService.update(entity);
+
+            // 204 : No Content
+            return ResponseEntity.status(204).body(null);
+        } catch (NullPointerException e) {
+            return ResponseEntity.badRequest().body(null);
+        }
+
     }
 
     @PutMapping("/delete/{icsFileName}/{uid}")

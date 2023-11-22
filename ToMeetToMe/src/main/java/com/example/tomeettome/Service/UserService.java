@@ -44,7 +44,7 @@ public class UserService {
 
             // Get profile information from payload
             String email = payload.getEmail();
-            boolean emailVerified = Boolean.valueOf(payload.getEmailVerified());
+//            boolean emailVerified = Boolean.valueOf(payload.getEmailVerified());
             String name = (String) payload.get("name");
             String pictureUrl = (String) payload.get("picture");
             String locale = (String) payload.get("locale");
@@ -52,7 +52,7 @@ public class UserService {
             String givenName = (String) payload.get("given_name");
 
             log.info("Email: " + email);
-            log.info("Email Verified: " + emailVerified);
+//            log.info("Email Verified: " + emailVerified);
             log.info("Name: " + name);
             log.info("Picture URL: " + pictureUrl);
             log.info("Locale: " + locale);

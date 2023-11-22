@@ -7,9 +7,7 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 import net.fortuna.ical4j.data.CalendarBuilder;
 import net.fortuna.ical4j.data.ParserException;
-import net.fortuna.ical4j.model.Calendar;
-import net.fortuna.ical4j.model.DateTime;
-import net.fortuna.ical4j.model.Property;
+import net.fortuna.ical4j.model.*;
 
 import java.io.IOException;
 import java.io.StringReader;
@@ -62,12 +60,15 @@ public class CaldavDTO {
         return ScheduleEntity.builder()
                 .uid(calendar.getComponent("VEVENT").getProperty(Property.UID).getValue())
                 .summary(calendar.getComponent("VEVENT").getProperty(Property.SUMMARY).getValue())
-                .description(calendar.getComponent("VEVENT").getProperty(Property.DESCRIPTION).getValue())
+                .description(calendar.getComponent("VEVENT").getProperty(Property.DESCRIPTION).getValue()!=null ?
+                        calendar.getComponent("VEVENT").getProperty(Property.DESCRIPTION).getValue() : "")
                 .dtStart(calendar.getComponent("VEVENT").getProperty(Property.DTSTART).getValue())
                 .dtEnd(calendar.getComponent("VEVENT").getProperty(Property.DTEND).getValue())
-                .location(calendar.getComponent("VEVENT").getProperty(Property.LOCATION).getValue())
-                .rRule(calendar.getComponent("VEVENT").getProperty(Property.RRULE).getValue())
-                .status(calendar.getComponent("VEVENT").getProperty(Property.EXPERIMENTAL_PREFIX +"STATUS").getValue())
+                .location(calendar.getComponent("VEVENT").getProperty(Property.LOCATION).getValue()!=null ?
+                        calendar.getComponent("VEVENT").getProperty(Property.LOCATION).getValue() : "")
+                .rRule(calendar.getComponent("VEVENT").getProperty(Property.RRULE).getValue()!= null ?
+                        calendar.getComponent("VEVENT").getProperty(Property.RRULE).getValue() : "")
+                .status(calendar.getComponent("VEVENT").getProperty(Property.EXPERIMENTAL_PREFIX + "STATUS").getValue())
                 .allDay(calendar.getComponent("VEVENT").getProperty(Property.EXPERIMENTAL_PREFIX + "ALLDAY").getValue())
                 .build();
     }

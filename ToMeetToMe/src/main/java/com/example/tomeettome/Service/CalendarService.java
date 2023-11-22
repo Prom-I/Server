@@ -1,5 +1,6 @@
 package com.example.tomeettome.Service;
 
+import com.example.tomeettome.DTO.TeamDTO;
 import com.example.tomeettome.Model.*;
 import com.example.tomeettome.Repository.*;
 import lombok.extern.slf4j.Slf4j;
@@ -23,6 +24,15 @@ public class CalendarService {
                 .build();
         return calendarRepository.save(calendar);
     }
+
+    public CalendarEntity creatTeamCalendar(TeamEntity team) {
+        CalendarEntity calendar = CalendarEntity.builder()
+                .icsFileName("TEAM"+team.getLeaderId()+".ics")
+                .componentType("VEVENT")
+                .build();
+        return calendarRepository.save(calendar);
+    }
+
     public CalendarPermissionEntity createUserCalendarPermission(UserEntity user, CalendarEntity calendar) {
         CalendarPermissionEntity calendarPermission = CalendarPermissionEntity.builder()
                 .icsFileName(calendar.getIcsFileName())
@@ -33,6 +43,28 @@ public class CalendarService {
                 .build();
         return calendarPermissionRepository.save(calendarPermission);
     }
+
+    public CalendarPermissionEntity createTeamCalendarPermission(TeamEntity team, TeamDTO dto, CalendarEntity calendar) {
+
+        for (String user : dto.getTeamUsers()) {
+            String permissionLevel = "readOnly";
+
+            if(user == team.getLeaderId()){ // 팀장꺼
+                permissionLevel = "admin";
+            }
+            // 나머지
+            CalendarPermissionEntity calendarPermission = CalendarPermissionEntity.builder()
+                    .icsFileName(calendar.getIcsFileName())
+                    .ownerOriginKey(team.getOriginKey())
+                    .ownerType("team")
+                    .permissionLevel(permissionLevel)
+                    .userId(user)
+                    .build();
+             calendarPermissionRepository.save(calendarPermission);
+        }
+        return null; // 수정 해야 함
+    }
+
 
     public ScheduleEntity create(ScheduleEntity schedule, String userId, String categories) {
 
@@ -46,6 +78,9 @@ public class CalendarService {
 
     public ScheduleEntity update(ScheduleEntity entity) {
         final Optional<ScheduleEntity> original = Optional.ofNullable(scheduleRepository.findByUid(entity.getUid()));
+
+        if(original.isEmpty())
+            throw new NullPointerException();
 
         original.ifPresent(schedule ->{
             schedule.setCategoryOriginKey(entity.getCategoryOriginKey()!=null ? entity.getCategoryOriginKey() : schedule.getCategoryOriginKey());
