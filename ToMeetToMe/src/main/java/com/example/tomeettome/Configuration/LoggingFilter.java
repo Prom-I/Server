@@ -15,6 +15,8 @@ import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
+import java.net.InetAddress;
+import java.net.UnknownHostException;
 import java.nio.charset.StandardCharsets;
 import java.util.Enumeration;
 
@@ -55,6 +57,7 @@ public class LoggingFilter extends AbstractRequestLoggingFilter {
                 logger.info("Request: Header: {} = {}", headerName, headerValue);
             }
 
+            logger.info("Request IP : {}", request.getRemoteAddr());
             String requestBody = new String(requestWrapper.getContentAsByteArray(), requestWrapper.getCharacterEncoding());
             logger.info("Request Body: {}", requestBody);
 
