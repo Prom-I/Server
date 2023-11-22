@@ -18,14 +18,15 @@ public class CalendarService {
 
     public CalendarEntity createUserCalendar(UserEntity user) {
         CalendarEntity calendar = CalendarEntity.builder()
+                .icsFileName(user.getUserId()+".ics")
                 .componentType("VEVENT")
                 .build();
         return calendarRepository.save(calendar);
     }
     public CalendarPermissionEntity createUserCalendarPermission(UserEntity user, CalendarEntity calendar) {
         CalendarPermissionEntity calendarPermission = CalendarPermissionEntity.builder()
-                .calendarOriginKey(calendar.getOriginKey())
-                .ownerOriginKey(user.getOriginKey())
+                .icsFileName(calendar.getIcsFileName())
+                .ownerOriginKey(user.getUid())
                 .ownerType("user")
                 .permissionLevel("admin")
                 .userId(user.getUserId())
@@ -39,12 +40,12 @@ public class CalendarService {
         schedule.setCategoryOriginKey(categoryEntity.getOriginKey());
 
         CalendarPermissionEntity calendarPermissionEntity = calendarPermissionRepository.findByUserId(userId);
-        schedule.setCalendarOriginKey(calendarPermissionEntity.getCalendarOriginKey());
+        schedule.setIcsFileName(calendarPermissionEntity.getIcsFileName());
         return scheduleRepository.save(schedule);
     }
 
     public ScheduleEntity update(ScheduleEntity entity) {
-        final Optional<ScheduleEntity> original = Optional.ofNullable(scheduleRepository.findByOriginKey(entity.getOriginKey()));
+        final Optional<ScheduleEntity> original = Optional.ofNullable(scheduleRepository.findByUid(entity.getUid()));
 
         original.ifPresent(schedule ->{
             schedule.setCategoryOriginKey(entity.getCategoryOriginKey()!=null ? entity.getCategoryOriginKey() : schedule.getCategoryOriginKey());
@@ -58,8 +59,13 @@ public class CalendarService {
             schedule.setAllDay(entity.getAllDay() != null ? entity.getAllDay() : schedule.getAllDay());
             scheduleRepository.save(schedule);
         });
-        return scheduleRepository.findByOriginKey(entity.getOriginKey());
+        return scheduleRepository.findByUid(entity.getUid());
     }
 
+    public ScheduleEntity delete(String uid) {
+        ScheduleEntity entity = scheduleRepository.findByUid(uid);
+        scheduleRepository.delete(entity);
+        return entity;
+    }
 
 }

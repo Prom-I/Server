@@ -14,7 +14,7 @@ import java.time.LocalDateTime;
 @AllArgsConstructor
 @Data
 public class CalendarDTO {
-    private String originKey;
+    private String icsFileName;
     private String userId;
     private String userName;
     private String componentType;
@@ -22,7 +22,7 @@ public class CalendarDTO {
     private LocalDateTime createdAt;
 
     public CalendarDTO(final CalendarEntity calendarEntity, final UserEntity userEntity) {
-        this.originKey = calendarEntity.getOriginKey();
+        this.icsFileName = calendarEntity.getIcsFileName();
         this.userId = userEntity.getUserId();
         this.userName = userEntity.getUserName();
         this.lastModifiedAt = calendarEntity.getLastModifiedAt();
@@ -30,7 +30,7 @@ public class CalendarDTO {
     }
     public static CalendarEntity toEntity(CalendarDTO dto){
         return CalendarEntity.builder()
-                .originKey(dto.getOriginKey())
+                .icsFileName(dto.getIcsFileName())
                 .componentType(dto.getComponentType())
                 .build();
     }

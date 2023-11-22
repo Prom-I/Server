@@ -45,8 +45,7 @@ public class UserController {
         if (user != null) { // 회원가입 또는 로그인의 경우
             boolean result = userService.checkUserExists(user.getUserId());
             log.info("로그인 인가요? "+result);
-            //log.info("user.getUserID: "+user.getUserId());
-            //log.info("userRepo "+userRepository.findByUserId(user.getUserId()).getUserId());
+
             if (result) { // 로그인
                 String token = tokenProvider.create(user);
                 UserDTO userDTO = UserDTO.builder()
@@ -77,6 +76,7 @@ public class UserController {
      * @param dto UserDTO
      * @return UserDTO
      */
+
     @PostMapping("/signup")
     public ResponseEntity<?> create(@RequestBody UserDTO dto) {
         UserEntity user = dto.toEntity(dto);
@@ -87,7 +87,7 @@ public class UserController {
             categoryService.init(calendar); // Default Category 생성
 
             CalendarDTO calendarDTO = CalendarDTO.builder()
-                    .originKey(calendar.getOriginKey())
+                    .icsFileName(calendar.getIcsFileName())
                     .componentType(calendar.getComponentType())
                     .userId(user.getUserId())
                     .userName(user.getUserName())

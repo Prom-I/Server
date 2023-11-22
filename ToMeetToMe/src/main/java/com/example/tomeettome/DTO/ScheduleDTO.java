@@ -13,8 +13,8 @@ import java.time.LocalDateTime;
 @AllArgsConstructor
 @Data
 public class ScheduleDTO {
-    private String originKey;
-    private String calendarOriginKey;
+    private String uid;
+    private String icsFileName;
     private String categoryOriginKey;
     private String summary;
     private String description;
@@ -28,8 +28,8 @@ public class ScheduleDTO {
     private LocalDateTime createdAt;
 
     public ScheduleDTO(final ScheduleEntity entity) {
-        this.originKey = entity.getOriginKey();
-        this.calendarOriginKey = entity.getCalendarOriginKey();
+        this.uid = entity.getUid();
+        this.icsFileName = entity.getIcsFileName();
         this.categoryOriginKey = entity.getCategoryOriginKey();
         this.summary = entity.getSummary();
         this.description = entity.getDescription();
@@ -46,8 +46,8 @@ public class ScheduleDTO {
     // DTO -> Entity 변환
     public static ScheduleEntity toEntity(final ScheduleDTO dto) {
         return ScheduleEntity.builder()
-                .originKey(dto.getOriginKey())
-                .calendarOriginKey(dto.getCalendarOriginKey())
+                .uid(dto.getUid())
+                .icsFileName(dto.getIcsFileName())
                 .categoryOriginKey(dto.getCategoryOriginKey())
                 .summary(dto.getSummary())
                 .description(dto.getSummary())

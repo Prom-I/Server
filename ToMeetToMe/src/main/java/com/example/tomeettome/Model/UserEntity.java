@@ -18,11 +18,12 @@ import java.time.LocalDateTime;
 @NoArgsConstructor
 @AllArgsConstructor
 @Table(name = "User",uniqueConstraints = {@UniqueConstraint(columnNames = "userId")})
+// Calendar Collection
 public class UserEntity {
     @Id
     @GeneratedValue(generator = "system-uuid")
     @GenericGenerator(name = "system-uuid", strategy = "uuid")
-    private String originKey;
+    private String uid;
 
     @NonNull
     private String userId;

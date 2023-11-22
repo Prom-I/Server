@@ -14,7 +14,7 @@ public class CategoryService {
 
     public CategoryEntity init(CalendarEntity entity) {
         CategoryEntity category = CategoryEntity.builder()
-                .calendarOriginKey(entity.getOriginKey())
+                .calendarOriginKey(entity.getIcsFileName())
                 .name("DEFAULT")
                 .scope("PUBLIC")
                 .color("WHITE")

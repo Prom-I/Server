@@ -1,6 +1,5 @@
 package com.example.tomeettome.Model;
 
-import com.example.tomeettome.DTO.CaldavDTO;
 import lombok.Builder;
 import lombok.NoArgsConstructor;
 import lombok.AllArgsConstructor;
@@ -23,12 +22,13 @@ import java.time.LocalDateTime;
 @Data
 @Entity
 @Table(name = "Schedule")
+// Calendar Component, VEVENT
 public class ScheduleEntity {
     @Id
     @GeneratedValue(generator="system-uuid")
     @GenericGenerator(name="system-uuid", strategy="uuid")
-    private String originKey;
-    private String calendarOriginKey;
+    private String uid;
+    private String icsFileName;
     private String categoryOriginKey;
     private String summary; // 일정의 제목
     private String description; // 일정의 상세설명

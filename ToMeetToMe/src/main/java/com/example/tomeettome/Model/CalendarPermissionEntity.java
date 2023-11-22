@@ -25,7 +25,7 @@ public class CalendarPermissionEntity {
     @GeneratedValue(generator="system-uuid")
     @GenericGenerator(name="system-uuid", strategy="uuid")
     private String originKey;
-    private String calendarOriginKey;
+    private String icsFileName;
     private String ownerOriginKey; // userOriginKey 또는 groupOriginKey, 캘린더의 소유자
     private String ownerType; // user 또는 group
     private String permissionLevel; // 관리자(admin) 또는 읽기전용(ReadOnly)

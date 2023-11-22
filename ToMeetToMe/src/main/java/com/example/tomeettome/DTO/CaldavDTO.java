@@ -60,6 +60,7 @@ public class CaldavDTO {
         Calendar calendar = builder.build(sin);
 
         return ScheduleEntity.builder()
+                .uid(calendar.getComponent("VEVENT").getProperty(Property.UID).getValue())
                 .summary(calendar.getComponent("VEVENT").getProperty(Property.SUMMARY).getValue())
                 .description(calendar.getComponent("VEVENT").getProperty(Property.DESCRIPTION).getValue())
                 .dtStart(calendar.getComponent("VEVENT").getProperty(Property.DTSTART).getValue())
