@@ -37,4 +37,4 @@ out/
 .vscode/
 
 ### application.yaml ###
-.yaml
+*.yaml
