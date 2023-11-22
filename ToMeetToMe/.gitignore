@@ -16,6 +16,7 @@ build/
 bin/
 !**/src/main/**/bin/
 !**/src/test/**/bin/
+*.yaml
 
 ### IntelliJ IDEA ###
 .idea
@@ -37,4 +38,3 @@ out/
 .vscode/
 
 ### application.yaml ###
-*.yaml
