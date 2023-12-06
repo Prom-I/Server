@@ -29,7 +29,7 @@ public class TeamEntity {
     private String name;
     private int numOfUsers;
     private String image;
-    private String leaderId;
+    private String founderId;
 
     @UpdateTimestamp
     private LocalDateTime lastModifiedAt;

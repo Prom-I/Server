@@ -27,7 +27,7 @@ public class CalendarService {
 
     public CalendarEntity creatTeamCalendar(TeamEntity team) {
         CalendarEntity calendar = CalendarEntity.builder()
-                .icsFileName("TEAM"+team.getLeaderId()+".ics")
+                .icsFileName("TEAM"+team.getFounderId()+".ics")
                 .componentType("VEVENT")
                 .build();
         return calendarRepository.save(calendar);
@@ -49,7 +49,7 @@ public class CalendarService {
         for (String user : dto.getTeamUsers()) {
             String permissionLevel = "readOnly";
 
-            if(user == team.getLeaderId()){ // 팀장꺼
+            if(user == team.getFounderId()){ // 팀장꺼
                 permissionLevel = "admin";
             }
             // 나머지

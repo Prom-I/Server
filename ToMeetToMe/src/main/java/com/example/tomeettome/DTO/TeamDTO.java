@@ -13,7 +13,7 @@ import lombok.NoArgsConstructor;
 @Data
 public class TeamDTO {
     private String name;
-    private String leaderId;
+    private String founderId;
     private String image;
     private String [] teamUsers;
 
@@ -21,7 +21,7 @@ public class TeamDTO {
     public static TeamEntity toEntity(final TeamDTO dto) {
         return TeamEntity.builder()
                 .name(dto.getName())
-                .leaderId(dto.getLeaderId())
+                .founderId(dto.getFounderId())
                 .image(dto.getImage())
                 .numOfUsers(dto.teamUsers.length)
                 .build();

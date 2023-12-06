@@ -12,6 +12,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -27,21 +28,23 @@ public class TeamController {
     @Autowired CalendarService calendarService;
 
     /**
-     *
+     * 팀의 이름은 바꿀 수 없음, 팀장은 없고 약속에 대한 관리자는 존재함
      * @param dto TeamDTO (이름, 참여자, 팀장, 이미지)
      * @return TeamDTO
      */
     @PostMapping("/create")
-    public ResponseEntity<?> create(@RequestBody TeamDTO dto) {
+    public ResponseEntity<?> create(@AuthenticationPrincipal String userId, @RequestBody TeamDTO dto) {
         TeamEntity team = dto.toEntity(dto);
+        // FounderId 세팅
+        team.setFounderId(userId);
         team = teamService.createTeam(team);
         CalendarEntity calendar = calendarService.creatTeamCalendar(team);
-        calendarService.createTeamCalendarPermission(team,dto,calendar);
+        calendarService.createTeamCalendarPermission(team, dto, calendar);
 
         TeamDTO teamDTO = TeamDTO.builder()
                 .name(team.getName())
                 .teamUsers(dto.getTeamUsers())
-                .leaderId(dto.getLeaderId())
+                .founderId(dto.getFounderId())
                 .build();
 
         ResponseDTO<TeamDTO> response = ResponseDTO.<TeamDTO>builder().data(Collections.singletonList(teamDTO)).status("success").build();
