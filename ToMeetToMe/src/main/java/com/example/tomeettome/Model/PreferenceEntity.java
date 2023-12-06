@@ -28,6 +28,7 @@ public class PreferenceEntity {
     @GenericGenerator(name="system-uuid", strategy="uuid")
     private String originKey;
     private String teamOriginKey;
+    private String leaderId; // 약속을 만든 사람, 약속을 수정하고 확정할 수 있는 권한자
     private String name;
     private String startAt;
     private String endAt;
