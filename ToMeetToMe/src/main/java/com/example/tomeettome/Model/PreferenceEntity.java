@@ -26,20 +26,24 @@ public class PreferenceEntity {
     @Id
     @GeneratedValue(generator="system-uuid")
     @GenericGenerator(name="system-uuid", strategy="uuid")
-    private String originKey;
+    private String uid;
     private String teamOriginKey;
     private String organizerId; // 약속을 만든 사람, 약속을 수정하고 확정할 수 있는 권한자
-    private String name;
-    private String startAt;
-    private String endAt;
-    private String possibleUserCount;
-    private String confirmed;
 
-    private int duration;
+    private String summary;
+    private String dtStart;
+    private String dtEnd;
+    private String location;
+
+    private String duration; // P15DT5H0M20S : 15Days 5Hours 0Minutes 20Seconds
+                             // PT2H : 2Hours
     private String startDayScope;
     private String endDayScope;
     private String startTimeScope;
     private String endTimeScope;
+
+    private String possibleUserCount;
+    private String status;
     private String allDay;
 
     @UpdateTimestamp

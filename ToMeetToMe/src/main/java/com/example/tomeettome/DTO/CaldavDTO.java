@@ -1,5 +1,6 @@
 package com.example.tomeettome.DTO;
 
+import com.example.tomeettome.Model.PreferenceEntity;
 import com.example.tomeettome.Model.ScheduleEntity;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -11,7 +12,6 @@ import net.fortuna.ical4j.model.*;
 
 import java.io.IOException;
 import java.io.StringReader;
-import java.text.ParseException;
 
 @Builder
 @NoArgsConstructor
@@ -52,7 +52,7 @@ public class CaldavDTO {
      / "IN-PROCESS"   ;Indicates to-do in process of.
      / "CANCELLED"    ;Indicates to-do was cancelled.
      */
-    public static ScheduleEntity toEntity(final CaldavDTO dto) throws ParserException, IOException {
+    public static ScheduleEntity toScheduleEntity(final CaldavDTO dto) throws ParserException, IOException {
         StringReader sin = new StringReader(dto.calendarString);
         CalendarBuilder builder = new CalendarBuilder();
         Calendar calendar = builder.build(sin);
@@ -73,14 +73,39 @@ public class CaldavDTO {
                 .build();
     }
 
+    public static PreferenceEntity toPreferenceEntity(final CaldavDTO dto) throws ParserException, IOException {
+        StringReader sin = new StringReader(dto.calendarString);
+        CalendarBuilder builder = new CalendarBuilder();
+        Calendar calendar = builder.build(sin);
+
+        return PreferenceEntity.builder()
+                .uid(calendar.getComponent("VEVENT").getProperty(Property.UID).getValue())
+                .summary(calendar.getComponent("VEVENT").getProperty(Property.SUMMARY).getValue())
+                .dtStart(calendar.getComponent("VEVENT").getProperty(Property.DTSTART).getValue())
+                .dtEnd(calendar.getComponent("VEVENT").getProperty(Property.DTEND).getValue())
+                .location(calendar.getComponent("VEVENT").getProperty(Property.LOCATION).getValue()!=null ?
+                        calendar.getComponent("VEVENT").getProperty(Property.LOCATION).getValue() : "")
+
+                .duration(calendar.getComponent("VEVENT").getProperty(Property.DURATION).getValue())
+                .startDayScope(calendar.getComponent("VEVENT").getProperty(Property.EXPERIMENTAL_PREFIX + "STARTDAYSCOPE").getValue())
+                .endDayScope(calendar.getComponent("VEVENT").getProperty(Property.EXPERIMENTAL_PREFIX + "ENDDAYSCOPE").getValue())
+                .startTimeScope(calendar.getComponent("VEVENT").getProperty(Property.EXPERIMENTAL_PREFIX + "STARTTIMESCOPE").getValue())
+                .endTimeScope(calendar.getComponent("VEVENT").getProperty(Property.EXPERIMENTAL_PREFIX + "ENDTIMESCOPE").getValue())
+
+                .status(calendar.getComponent("VEVENT").getProperty(Property.EXPERIMENTAL_PREFIX + "STATUS").getValue())
+                .allDay(calendar.getComponent("VEVENT").getProperty(Property.EXPERIMENTAL_PREFIX + "ALLDAY").getValue())
+                .build();
+    }
+
     public String getValue(String calendarString, String property) throws ParserException, IOException {
         StringReader sin = new StringReader(calendarString);
         CalendarBuilder builder = new CalendarBuilder();
         Calendar calendar = builder.build(sin);
-        String value = calendar.getComponent("VEVENT").getProperty(Property.CATEGORIES).getValue();
+        String value = calendar.getComponent("VEVENT").getProperty(property).getValue();
 
         return value;
     }
+
 
 
 }

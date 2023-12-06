@@ -7,6 +7,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
+import java.util.List;
 import java.util.Optional;
 
 @Slf4j
@@ -65,15 +66,43 @@ public class CalendarService {
         return null; // 수정 해야 함
     }
 
-
     public ScheduleEntity create(ScheduleEntity schedule, String userId, String categories) {
 
         CategoryEntity categoryEntity = categoryRepository.findByName(categories);
         schedule.setCategoryOriginKey(categoryEntity.getOriginKey());
 
-        CalendarPermissionEntity calendarPermissionEntity = calendarPermissionRepository.findByUserId(userId);
-        schedule.setIcsFileName(calendarPermissionEntity.getIcsFileName());
+        List<CalendarPermissionEntity> calendarPermissionEntities = calendarPermissionRepository.findByUserId(userId);
+
+        CalendarPermissionEntity permission = new CalendarPermissionEntity();
+
+        // CalendarPermission 중에 user 개인의 Calendar를 찾기 위해
+        for (CalendarPermissionEntity p : calendarPermissionEntities) {
+            if (p.getOwnerType().equals("user")) {
+                permission = p;
+            }
+        }
+        schedule.setIcsFileName(permission.getIcsFileName());
         return scheduleRepository.save(schedule);
+    }
+
+    public List<ScheduleEntity> retrieveOnlyUser(String userId) {
+        List<CalendarPermissionEntity> calendarPermissionEntities = calendarPermissionRepository.findByUserId(userId);
+
+        CalendarPermissionEntity permission = new CalendarPermissionEntity();
+
+        // CalendarPermission 중에 user 개인의 Calendar를 찾기 위해
+        for (CalendarPermissionEntity p : calendarPermissionEntities) {
+            if (p.getOwnerType().equals("user")) {
+                permission = p;
+            }
+        }
+
+        // user 개인의 Calendar를 찾음
+        CalendarEntity calendar = calendarRepository.findByIcsFileName(permission.getIcsFileName());
+
+        // schedule List
+        return scheduleRepository.findByIcsFileName(calendar.getIcsFileName());
+
     }
 
     public ScheduleEntity update(ScheduleEntity entity) {

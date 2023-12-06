@@ -6,4 +6,5 @@ import org.springframework.stereotype.Repository;
 
 @Repository
 public interface CalendarRepository extends JpaRepository<CalendarEntity, String> {
+    CalendarEntity findByIcsFileName(String icsFileName);
 }

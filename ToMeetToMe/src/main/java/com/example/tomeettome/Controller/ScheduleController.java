@@ -6,7 +6,9 @@ import com.example.tomeettome.Service.CalendarService;
 import com.example.tomeettome.Service.CategoryService;
 import lombok.extern.slf4j.Slf4j;
 import net.fortuna.ical4j.data.ParserException;
+import net.fortuna.ical4j.model.Property;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
@@ -42,18 +44,17 @@ public class ScheduleController {
         try {
             CaldavDTO dto = new CaldavDTO(component);
 
-            ScheduleEntity entity = dto.toEntity(dto);
+            ScheduleEntity entity = dto.toScheduleEntity(dto);
             entity.setIcsFileName(icsFileName);
-            String categories = dto.getValue(component, "CATEGORIES");
-
+            String categories = dto.getValue(component, Property.CATEGORIES);
+            log.info("CATEGORIES : " + categories);
             // 존재하지 않는 카테고리로 스케쥴 생성요청을 보내면 error
             ScheduleEntity schedule = calendarService.create(entity, userId, categories);
 
             ScheduleDTO scheduleDTO = ScheduleDTO.builder().uid(schedule.getUid()).build();
             ResponseDTO response = ResponseDTO.<ScheduleDTO>builder().data(Collections.singletonList(scheduleDTO)).status("success").build();
 
-            // 201 : Created
-            return ResponseEntity.status(201).body(response);
+            return ResponseEntity.status(HttpStatus.CREATED).body(response);
         } catch (NullPointerException e) {
             return ResponseEntity.badRequest().body(e.getMessage());
         }
@@ -64,13 +65,12 @@ public class ScheduleController {
                                     @RequestBody String calendarString) throws ParserException, IOException {
         try {
             CaldavDTO dto = new CaldavDTO(calendarString);
-            ScheduleEntity entity = dto.toEntity(dto);
+            ScheduleEntity entity = dto.toScheduleEntity(dto);
 
             entity.setCategoryOriginKey(categoryService.findOriginKeyByName(dto.getValue(calendarString, "CATEGORIES")));
             calendarService.update(entity);
 
-            // 204 : No Content
-            return ResponseEntity.status(204).body(null);
+            return ResponseEntity.status(HttpStatus.NO_CONTENT).body(null);
         } catch (NullPointerException e) {
             return ResponseEntity.badRequest().body(null);
         }
@@ -85,7 +85,7 @@ public class ScheduleController {
 
             ResponseDTO response = ResponseDTO.<ScheduleEntity>builder().data(Collections.singletonList(entity)).status("succeed").build();
 
-            return ResponseEntity.status(204).body(response);
+            return ResponseEntity.status(HttpStatus.NO_CONTENT).body(response);
 
         } catch (Exception e) {
             String error = e.getMessage();
