@@ -28,12 +28,18 @@ public class TeamController {
     @Autowired CalendarService calendarService;
 
     /**
+     * 팀을 만들 때, 팀원이 한명도 없으면 못 만듦
      * 팀의 이름은 바꿀 수 없음, 팀장은 없고 약속에 대한 관리자는 존재함
      * @param dto TeamDTO (이름, 참여자, 팀장, 이미지)
      * @return TeamDTO
      */
     @PostMapping("/create")
     public ResponseEntity<?> create(@AuthenticationPrincipal String userId, @RequestBody TeamDTO dto) {
+
+        // 팀원이 자기 자신밖에 없거나 아예 안보내주는 경우 400 Bad Request
+        if(dto.getTeamUsers().length <= 1) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(null);
+        }
         TeamEntity team = dto.toEntity(dto);
         // FounderId 세팅
         team.setFounderId(userId);
