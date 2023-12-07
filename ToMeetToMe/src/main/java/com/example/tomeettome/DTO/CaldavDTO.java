@@ -87,10 +87,8 @@ public class CaldavDTO {
                         calendar.getComponent("VEVENT").getProperty(Property.LOCATION).getValue() : "")
 
                 .duration(calendar.getComponent("VEVENT").getProperty(Property.DURATION).getValue())
-                .startDayScope(calendar.getComponent("VEVENT").getProperty(Property.EXPERIMENTAL_PREFIX + "STARTDAYSCOPE").getValue())
-                .endDayScope(calendar.getComponent("VEVENT").getProperty(Property.EXPERIMENTAL_PREFIX + "ENDDAYSCOPE").getValue())
-                .startTimeScope(calendar.getComponent("VEVENT").getProperty(Property.EXPERIMENTAL_PREFIX + "STARTTIMESCOPE").getValue())
-                .endTimeScope(calendar.getComponent("VEVENT").getProperty(Property.EXPERIMENTAL_PREFIX + "ENDTIMESCOPE").getValue())
+                .startScope(calendar.getComponent("VEVENT").getProperty(Property.EXPERIMENTAL_PREFIX + "STARTSCOPE").getValue())
+                .endScope(calendar.getComponent("VEVENT").getProperty(Property.EXPERIMENTAL_PREFIX + "ENDSCOPE").getValue())
 
                 .status(calendar.getComponent("VEVENT").getProperty(Property.EXPERIMENTAL_PREFIX + "STATUS").getValue())
                 .allDay(calendar.getComponent("VEVENT").getProperty(Property.EXPERIMENTAL_PREFIX + "ALLDAY").getValue())

@@ -37,10 +37,8 @@ public class PreferenceEntity {
 
     private String duration; // P15DT5H0M20S : 15Days 5Hours 0Minutes 20Seconds
                              // PT2H : 2Hours
-    private String startDayScope;
-    private String endDayScope;
-    private String startTimeScope;
-    private String endTimeScope;
+    private String startScope; // T를 기준으로 앞은 dayScope, 뒤는 timeScope
+    private String endScope;
 
     private String possibleUserCount;
     private String status;

@@ -29,20 +29,39 @@ public class PreferenceService {
     public PreferenceEntity create(PreferenceEntity entity, List<String> preferredDays) {
 
         // 조건 설정 (소요 시간, 기간대, 시간대, 선호 요일)
-        // 20231207
-        // 20231219
-        LocalDate startDayScope = LocalDate.parse(entity.getStartDayScope().split("T")[0], DateTimeFormatter.ofPattern("yyyyMMdd"));
-        LocalDate endDayScope = LocalDate.parse(entity.getEndDayScope().split("T")[0], DateTimeFormatter.ofPattern("yyyyMMdd"));
+        // 20231207T090000Z : T를 기준으로 앞이 DayScope, 뒤가 TimeScope
+        // 20231219T210000Z
+        String [] startScope = entity.getStartScope().split("T");
+        String [] endScope = entity.getEndScope().split("T");
+
+        // Day Scope Parsing
+        LocalDate startDayScope = LocalDate.parse(startScope[0], DateTimeFormatter.ofPattern("yyyyMMdd"));
+        LocalDate endDayScope = LocalDate.parse(endScope[0], DateTimeFormatter.ofPattern("yyyyMMdd"));
+
+        // Time Scope Parsing
+        Integer.parseInt(endScope[1].substring(0,2));
+
 
         // 날짜 사이의 일 수 계산
         // Math.toIntExact : int 범위를 초과하면 ArithmeticException throw, Java 8부터 지원
         // ChronoUnit.DAYS.between은 마지막 날짜를 포함하지 않으므로 +1 해줘야함
-        int daysBetween = Math.toIntExact(ChronoUnit.DAYS.between(startDayScope, endDayScope)) + 1;
+        int range = Math.toIntExact(ChronoUnit.DAYS.between(startDayScope, endDayScope)) + 1;
 
         // 선호 요일을 제외해서 날짜 Parsing
+        // 특정 요일을 제외한 날짜들을 얻기
+        Set<Integer> excludedDays = new HashSet<>();
+        // preferredDays가 String 형태로 들어왔기 때문에 parseInt로 바꿔서 넣어줌 -> 에러처리 해야함!
+
+        for(String day : preferredDays) {
+            excludedDays.add(Integer.parseInt(day));
+        }
+
+        // LocalDate List로 내가 제외할 날짜를 제외해서 약속을 만들 가능성이 있는 날짜를 parsing
+        List<LocalDate> datesWithoutSpecificDays =
+                getDatesWithoutSpecificDays(startDayScope, excludedDays, range);
 
         // 가능한 총 갯수 : 날짜 갯수 * 하루에 일정을 잡을 수 있는 갯수
-
+        datesWithoutSpecificDays.size() +
 
         // 팀원들 각각 일정을 뽑아야 하니까
         TeamEntity team = teamRepository.findByOriginKey(entity.getTeamOriginKey());
@@ -53,6 +72,23 @@ public class PreferenceService {
 
         }
 
+    }
+
+    private static List<LocalDate> getDatesWithoutSpecificDays(LocalDate startDate, Set<Integer> daysToExclude, int range) {
+        List<LocalDate> dates = new ArrayList<>();
+
+        int daysChecked = 0;
+
+        while (daysChecked < range) {
+            if (!daysToExclude.contains(startDate.getDayOfWeek().getValue())) {
+                dates.add(startDate);
+                daysChecked++;
+            }
+
+            startDate = startDate.plusDays(1);
+        }
+
+        return dates;
     }
 
 
