@@ -38,30 +38,39 @@ public class PreferenceService {
         LocalDate startDayScope = LocalDate.parse(startScope[0], DateTimeFormatter.ofPattern("yyyyMMdd"));
         LocalDate endDayScope = LocalDate.parse(endScope[0], DateTimeFormatter.ofPattern("yyyyMMdd"));
 
-        // Time Scope Parsing
-        Integer.parseInt(endScope[1].substring(0,2));
+        // Time Scope Parsing, 하루에 가능한 블록 개수 : end-duration-start+1
+        // 예시로, timeScope=09~21, duration=2라면 마지막 블록이 19~21 블록이므로 이런 계산이 나옴
+        int timeRange = Integer.parseInt(endScope[1].substring(0,2))
+                - Integer.parseInt(entity.getDuration()) - Integer.parseInt(startScope[1].substring(0,2)) + 1;
 
+        List<String> times = new ArrayList<>();
+        // 블록 개수가 10개면 가능한 블록들을 시간으로 바꿔서 넣으려면 시작시간부터 블록 개수를 하나씩 늘려가며 더해주면 됨
+        // 09시 시작이고 duration은 2, 블록 개수 10개면 List에는 ["09", "10", ..]
+        for (int i=0; i<timeRange; i++) {
+            int time = Integer.parseInt(startScope[1].substring(0,2)) + i;
+            times.add(String.valueOf(time));
+        }
 
         // 날짜 사이의 일 수 계산
         // Math.toIntExact : int 범위를 초과하면 ArithmeticException throw, Java 8부터 지원
         // ChronoUnit.DAYS.between은 마지막 날짜를 포함하지 않으므로 +1 해줘야함
-        int range = Math.toIntExact(ChronoUnit.DAYS.between(startDayScope, endDayScope)) + 1;
+        int dayRange = Math.toIntExact(ChronoUnit.DAYS.between(startDayScope, endDayScope)) + 1;
 
         // 선호 요일을 제외해서 날짜 Parsing
         // 특정 요일을 제외한 날짜들을 얻기
         Set<Integer> excludedDays = new HashSet<>();
-        // preferredDays가 String 형태로 들어왔기 때문에 parseInt로 바꿔서 넣어줌 -> 에러처리 해야함!
 
+        // preferredDays가 String 형태로 들어왔기 때문에 parseInt로 바꿔서 넣어줌 -> 에러처리 해야함!
         for(String day : preferredDays) {
             excludedDays.add(Integer.parseInt(day));
         }
 
         // LocalDate List로 내가 제외할 날짜를 제외해서 약속을 만들 가능성이 있는 날짜를 parsing
         List<LocalDate> datesWithoutSpecificDays =
-                getDatesWithoutSpecificDays(startDayScope, excludedDays, range);
+                getDatesWithoutSpecificDays(startDayScope, excludedDays, dayRange);
 
         // 가능한 총 갯수 : 날짜 갯수 * 하루에 일정을 잡을 수 있는 갯수
-        datesWithoutSpecificDays.size() +
+        int availableCounts = datesWithoutSpecificDays.size() * timeRange;
 
         // 팀원들 각각 일정을 뽑아야 하니까
         TeamEntity team = teamRepository.findByOriginKey(entity.getTeamOriginKey());
