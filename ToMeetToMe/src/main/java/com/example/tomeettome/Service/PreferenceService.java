@@ -72,13 +72,22 @@ public class PreferenceService {
         // 가능한 총 갯수 : 날짜 갯수 * 하루에 일정을 잡을 수 있는 갯수
         int availableCounts = datesWithSpecificDays.size() * timeRange;
 
+        // 팀원들의 일정을 요구 조건에 맞게 추출하는 로직
         // 팀원들 각각 일정을 뽑아야 하니까
         TeamEntity team = teamRepository.findByOriginKey(entity.getTeamOriginKey());
         List<CalendarPermissionEntity> permissions = calendarPermissionRepository.findByOwnerOriginKey(team.getOriginKey());
 
+        List<ScheduleEntity> schedules = new ArrayList<>();
         for (CalendarPermissionEntity p : permissions) {
-            List<ScheduleEntity> schedules = calendarService.retrieveOnlyUser(p.getUserId());
+            // 각 팀원들의 일정을 day scope에만 맞게 추출
+            schedules.addAll(calendarService.retrieveByDateRange(p.getUserId(), startDayScope, endDayScope));
         }
+
+        // 팀원들의 일정을 time scope에 맞게 추출
+
+        // duration 단위로 블록화
+
+        // TreeMap에 넣고 최소값 추출
 
     }
 
