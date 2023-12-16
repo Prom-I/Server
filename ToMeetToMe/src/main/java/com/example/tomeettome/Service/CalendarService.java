@@ -109,12 +109,12 @@ public class CalendarService {
 
     }
 
-    public List<ScheduleEntity> retrieveByDateRange(String userId, LocalDate dtStart, LocalDate dtEnd) {
-        LocalDateTime dtStartDateTime = dtStart.atTime(LocalTime.MIN); // 시작날짜에 00시 00분 00초
-        LocalDateTime dtEndDateTime = dtEnd.atTime(LocalTime.MAX); // 끝날짜에 23시 59분 59초
-
-        return scheduleRepository.findAllByDtStartBetweenAndDtEndBetween(dtStartDateTime, dtEndDateTime);
-    }
+//    public List<ScheduleEntity> retrieveByDateRange(String userId, LocalDate dtStart, LocalDate dtEnd) {
+//        LocalDateTime dtStartDateTime = dtStart.atTime(LocalTime.MIN); // 시작날짜에 00시 00분 00초
+//        LocalDateTime dtEndDateTime = dtEnd.atTime(LocalTime.MAX); // 끝날짜에 23시 59분 59초
+//
+//        return scheduleRepository.findAllByDtStartBetweenAndDtEndBetween(dtStartDateTime, dtEndDateTime);
+//    }
 
     public ScheduleEntity update(ScheduleEntity entity) {
         final Optional<ScheduleEntity> original = Optional.ofNullable(scheduleRepository.findByUid(entity.getUid()));

@@ -16,10 +16,11 @@ import java.util.Locale;
 import java.util.Set;
 
 @Repository
-public interface ScheduleRepository extends JpaRepository<ScheduleEntity, String>, JpaSpecificationExecutor<ScheduleEntity> {
+// JpaSpecificationExecutor<ScheduleEntity>
+public interface ScheduleRepository extends JpaRepository<ScheduleEntity, String> {
     ScheduleEntity findByUid(String uid);
     List<ScheduleEntity> findByIcsFileName(String icsFileName);
-    List<ScheduleEntity> findAllByDtStartBetweenAndDtEndBetween(LocalDateTime dtStart, LocalDateTime dtEnd);
+//    List<ScheduleEntity> findAllByDtStartBetweenAndDtEndBetween(LocalDateTime dtStart, LocalDateTime dtEnd);
     List<ScheduleEntity> findAll(Specification<ScheduleEntity> spec);
 
     static Specification<ScheduleEntity> hasPreferredDays(Set<DayOfWeek> preferredDays, ScheduleEntity schedule) {
@@ -29,7 +30,15 @@ public interface ScheduleRepository extends JpaRepository<ScheduleEntity, String
     }
 
     static Specification<ScheduleEntity> hasPreferredTimeRange(LocalTime startTime, LocalTime endTime) {
-        return (root, query, builder) -> builder.between(root.get("startTime"), startTime, endTime)
-                .or(builder.between(root.get("endTime"), startTime, endTime));
+        // dtStart => String => LocalTime
+        // startTime, endTime => LocalTime
+
+        return (root, query, builder) -> builder.between(root.get("dtStart"), startTime, endTime)
+                .in(builder.between(root.get("dtEnd"), startTime, endTime));
     }
+
+
+    // 약속 시간대 09~21시 duration 2시간
+    // 09-11 10-12 11-13
+    // 일정 08시~10시
 }

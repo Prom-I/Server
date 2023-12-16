@@ -29,16 +29,18 @@ public class PreferenceController {
      * @throws ParserException
      * @throws IOException
      */
+//    @AuthenticationPrincipal String userId,
     @PutMapping("/create/{icsFileName}")
-    public ResponseEntity<?> create(@AuthenticationPrincipal String userId,
+    public ResponseEntity<?> create(
                                     @PathVariable("icsFileName") String icsFileName,
                                     @RequestBody String component) throws ParserException, IOException {
         CaldavDTO dto = new CaldavDTO(component);
         PreferenceEntity entity = dto.toPreferenceEntity(dto);
         List<String> preferredDays = List.of(dto.getValue(component, Property.EXPERIMENTAL_PREFIX + "PREFERREDDAYS").split(","));
-        entity.setOrganizerId(userId);
+        entity.setOrganizerId("yourUserId1");
 
-        entity = preferenceService.create(entity, preferredDays);
+        entity = preferenceService.create(entity, preferredDays, icsFileName);
 
+        return ResponseEntity.ok().body(null);
     }
 }
