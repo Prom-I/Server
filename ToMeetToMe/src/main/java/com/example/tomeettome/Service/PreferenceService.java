@@ -14,6 +14,7 @@ import org.springframework.stereotype.Service;
 
 import java.time.DayOfWeek;
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.time.format.DateTimeFormatter;
 import java.time.temporal.ChronoUnit;
@@ -59,6 +60,7 @@ public class PreferenceService {
             times.add(String.valueOf(time));
         }
 
+        log.info("times = " + times);
         // 날짜 사이의 일 수 계산
         // Math.toIntExact : int 범위를 초과하면 ArithmeticException throw, Java 8부터 지원
         // ChronoUnit.DAYS.between은 마지막 날짜를 포함하지 않으므로 +1 해줘야함
@@ -77,11 +79,14 @@ public class PreferenceService {
         List<LocalDate> datesWithSpecificDays =
                 getDatesWithSpecificDays(startDayScope, includedDays, dayRange);
 
+        log.info("datesSpecific = " + datesWithSpecificDays);
         // 가능한 총 갯수 : 날짜 갯수 * 하루에 일정을 잡을 수 있는 갯수
         int availableCounts = datesWithSpecificDays.size() * timeRange;
 
         // 팀원들의 일정을 요구 조건에 맞게 추출하는 로직
         // 팀원들 각각 일정을 뽑아야 하니까
+        // 팀 ics 파일 이름으로 permission -> team 찾기
+        // 이때 permission은 Team에 대한 팀원들의 permission
         List<CalendarPermissionEntity> permissions = calendarPermissionRepository.findByIcsFileName(icsFileName);
         TeamEntity team = teamRepository.findByOriginKey(permissions.get(0).getOwnerOriginKey());
 
@@ -90,10 +95,10 @@ public class PreferenceService {
         // 각 팀원들의 일정을 day scope, time scope, preferredDays에 맞게 추출
         List<ScheduleEntity> schedules = new ArrayList<>();
 
-        calendarPermissionRepository.findByIcsFileName(icsFileName);
-
+        List<String> combinedDateTimes = combineDatesAndTimes(datesWithSpecificDays, times);
         for (CalendarPermissionEntity p : permissions) {
-            schedules.addAll(findSchedulesWithPreferences(p.getIcsFileName(), changeStringToDayOfWeek(preferredDays),startTimeScope, endTimeScope));
+            schedules.addAll(findSchedulesWithPreferences(p.getUserId() + ".ics", datesWithSpecificDays,combinedDateTimes));
+            log.info("Schedules : " + schedules);
         }
 
         // 1207T09 ~ 1219T21, duration 2
@@ -113,14 +118,23 @@ public class PreferenceService {
         return null;
     }
 
-    public List<ScheduleEntity> findSchedulesWithPreferences(String icsFileName, Set<DayOfWeek> preferredDays, LocalTime startTime, LocalTime endTime) {
+    public List<ScheduleEntity> findSchedulesWithPreferences(String icsFileName, List<LocalDate> datesWithSpecificDays, List<String> combinedDateTimes) {
         List<ScheduleEntity> entities = scheduleRepository.findByIcsFileName(icsFileName);
         List<ScheduleEntity> result = new ArrayList<>();
-        for (ScheduleEntity e : entities) {
-            Specification<ScheduleEntity> spec = Specification.where(ScheduleRepository.hasPreferredDays(preferredDays, e))
-                    .and(ScheduleRepository.hasPreferredTimeRange(startTime, endTime));
-            result.addAll(scheduleRepository.findAll(spec));
+
+        Specification<ScheduleEntity> daySpec = null;
+        Specification<ScheduleEntity> timeSpec = null;
+
+        for (LocalDate day : datesWithSpecificDays) {
+            daySpec = Specification.where(ScheduleRepository.hasPreferredDays(day));
         }
+        log.info("combined " + combinedDateTimes);
+        for (int i=0; i<combinedDateTimes.size(); i++) {
+            log.info("combinedTimes" + combinedDateTimes.get(0));
+            timeSpec = Specification.where(ScheduleRepository.hasPreferredTimeRange(combinedDateTimes.get(i).toString()));
+        }
+        result.addAll(scheduleRepository.findAll(timeSpec));
+        log.info("result" + result.size());
         return result;
     }
 
@@ -152,5 +166,24 @@ public class PreferenceService {
         }
 
         return dates;
+    }
+
+    private static List<String> combineDatesAndTimes(List<LocalDate> dates, List<String> times) {
+        List<String> combinedDateTimes = new ArrayList<>();
+
+        for (LocalDate date : dates) {
+            for (String time : times) {
+                // Combine date and time, and format as 'yyyyMMdd'T'HHmmss'Z'
+                String combinedDateTime = formatDateAndTime(date, time);
+                combinedDateTimes.add(combinedDateTime);
+            }
+        }
+
+        return combinedDateTimes;
+    }
+
+    private static String formatDateAndTime(LocalDate date, String time) {
+        LocalDateTime dateTime = date.atTime(Integer.parseInt(time), 0);
+        return dateTime.format(DateTimeFormatter.ofPattern("yyyyMMdd'T'HHmmss'Z'"));
     }
 }
