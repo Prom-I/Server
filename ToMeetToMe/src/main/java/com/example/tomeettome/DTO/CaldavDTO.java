@@ -12,6 +12,9 @@ import net.fortuna.ical4j.model.*;
 
 import java.io.IOException;
 import java.io.StringReader;
+import java.sql.Timestamp;
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 
 @Builder
 @NoArgsConstructor
@@ -62,8 +65,8 @@ public class CaldavDTO {
                 .summary(calendar.getComponent("VEVENT").getProperty(Property.SUMMARY).getValue())
                 .description(calendar.getComponent("VEVENT").getProperty(Property.DESCRIPTION).getValue()!=null ?
                         calendar.getComponent("VEVENT").getProperty(Property.DESCRIPTION).getValue() : "")
-                .dtStart(calendar.getComponent("VEVENT").getProperty(Property.DTSTART).getValue())
-                .dtEnd(calendar.getComponent("VEVENT").getProperty(Property.DTEND).getValue())
+                .dtStart(Timestamp.valueOf(LocalDateTime.parse(calendar.getComponent("VEVENT").getProperty(Property.DTSTART).getValue(), DateTimeFormatter.ofPattern("yyyyMMdd'T'HHmmss'Z'"))))
+                .dtEnd(Timestamp.valueOf(LocalDateTime.parse(calendar.getComponent("VEVENT").getProperty(Property.DTEND).getValue(), DateTimeFormatter.ofPattern("yyyyMMdd'T'HHmmss'Z'"))))
                 .location(calendar.getComponent("VEVENT").getProperty(Property.LOCATION).getValue()!=null ?
                         calendar.getComponent("VEVENT").getProperty(Property.LOCATION).getValue() : "")
                 .rRule(calendar.getComponent("VEVENT").getProperty(Property.RRULE).getValue()!= null ?
@@ -81,8 +84,8 @@ public class CaldavDTO {
         return PreferenceEntity.builder()
                 .uid(calendar.getComponent("VEVENT").getProperty(Property.UID).getValue())
                 .summary(calendar.getComponent("VEVENT").getProperty(Property.SUMMARY).getValue())
-                .dtStart(calendar.getComponent("VEVENT").getProperty(Property.DTSTART).getValue())
-                .dtEnd(calendar.getComponent("VEVENT").getProperty(Property.DTEND).getValue())
+                .dtStart(LocalDateTime.parse(calendar.getComponent("VEVENT").getProperty(Property.DTSTART).getValue(), DateTimeFormatter.ofPattern("yyyyMMdd'T'HHmmss'Z'")))
+                .dtEnd(LocalDateTime.parse(calendar.getComponent("VEVENT").getProperty(Property.DTEND).getValue(), DateTimeFormatter.ofPattern("yyyyMMdd'T'HHmmss'Z'")))
                 .location(calendar.getComponent("VEVENT").getProperty(Property.LOCATION).getValue()!=null ?
                         calendar.getComponent("VEVENT").getProperty(Property.LOCATION).getValue() : "")
 

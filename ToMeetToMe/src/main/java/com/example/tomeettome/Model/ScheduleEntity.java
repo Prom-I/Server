@@ -14,6 +14,8 @@ import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.GenericGenerator;
 import org.hibernate.annotations.UpdateTimestamp;
 
+import java.sql.Time;
+import java.sql.Timestamp;
 import java.time.LocalDateTime;
 
 @Builder
@@ -32,8 +34,8 @@ public class ScheduleEntity {
     private String categoryOriginKey;
     private String summary; // 일정의 제목
     private String description; // 일정의 상세설명
-    private String dtStart; //시작 시간
-    private String dtEnd; //종료시간
+    private Timestamp dtStart; //시작 시간
+    private Timestamp dtEnd; //종료시간
     private String location;
     private String rRule;
     private String status;

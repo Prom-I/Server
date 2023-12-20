@@ -31,8 +31,8 @@ public class PreferenceEntity {
     private String organizerId; // 약속을 만든 사람, 약속을 수정하고 확정할 수 있는 권한자
 
     private String summary;
-    private String dtStart;
-    private String dtEnd;
+    private LocalDateTime dtStart;
+    private LocalDateTime dtEnd;
     private String location;
 
     private String duration; // P15DT5H0M20S : 15Days 5Hours 0Minutes 20Seconds
