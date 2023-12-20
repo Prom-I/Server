@@ -126,6 +126,7 @@ public class PreferenceService {
             DayInfo dayInfo = new DayInfo();
             dayInfo.conflictUsersByTime = new HashMap<>();
             for (String time : times) {
+                dayInfo.conflictUsersByTime.put(formatDateAndTime(date, time), new ArrayList<>());
                 options.put(date, dayInfo);
             }
         }
