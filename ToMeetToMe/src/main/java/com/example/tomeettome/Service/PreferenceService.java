@@ -162,7 +162,7 @@ public class PreferenceService {
 
             DayInfo dayInfo = options.get(startLocalDate);
 
-            dayInfo.conflictUsersByTime.get(startTime).add(schedule.getIcsFileName().substring(schedule.getIcsFileName().length()-4));
+            dayInfo.conflictUsersByTime.get(startTime).add(schedule.getIcsFileName().substring(0,schedule.getIcsFileName().length()-4));
             dayInfo.minValue = dayInfo.conflictUsersByTime.get(startTime).size();
             dayInfo.minFrequency = 1;
             startTime.setTime(startTime.getTime() + oneHourInMillis );
@@ -170,7 +170,7 @@ public class PreferenceService {
             for (int i = 1; i < term; i++) {
                 //
                 // 안되는 user에 userId 추가
-                dayInfo.conflictUsersByTime.get(startTime).add(schedule.getIcsFileName().substring(schedule.getIcsFileName().length()-4));
+                dayInfo.conflictUsersByTime.get(startTime).add(schedule.getIcsFileName().substring(0,schedule.getIcsFileName().length()-4));
                 // userId를 추가하고, Date의 최솟값과 최솟값의 빈도수 update
                 // dayInfo의 minValue 값 ==  dayInfo의 List Size 와 같을 경우 minFreq++
                 // dayInfo의 minValue 값 < dayInfo의 List의 Size
