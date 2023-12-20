@@ -208,6 +208,21 @@ public class PreferenceService {
         return null;
     }
 
+    public static boolean isTimestampRangeContained(Timestamp startA, Timestamp endA, Timestamp startB, Timestamp endB) {
+        // A는 schedule, B는 Indexing Block (내가 칠할 블록)
+        // case 1 : IB의 start == schedule의 start
+        // case 2 : IB의 end == schedule의 end
+        // case 3 : schedule의 end가 IB의 start와 end 사이에 있는 경우, 위로 걸쳐있는 경우
+        // case 4 : schedule의 start가 IB의 start와 end 사이에 있는 경우,아래로 걸쳐있는 경우
+        // case 5 : schedule의 start, end가 IB에 쏙 들어가 있는 경우, start와 end가 겹쳐지지 않고
+        return startA.equals(startB)
+                || endA.equals(endB)
+                || (endA.after(startB)&&endA.before(endB))
+                || (startA.after(startB)&&startA.before(endB))
+                || (startB.before(startA) && endB.after(endA));
+
+    }
+
     public List<ScheduleEntity> findSchedulesWithPreferences(List<Timestamp> preferredDateTimes) {
         List<ScheduleEntity> result = new ArrayList<>();
 
