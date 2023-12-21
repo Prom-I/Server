@@ -32,8 +32,6 @@ public interface ScheduleRepository extends JpaRepository<ScheduleEntity, String
     List<ScheduleEntity> findAll(Specification<ScheduleEntity> spec);
 
     static Specification<ScheduleEntity> hasPreferredTimeRange(Timestamp startTime, Timestamp endTime) {
-        // 20231215T090000Z .. 모든 block이 다들어옴 09-21 2 09 10 11 .. 19
-        // 20231217T090000Z
         return (root, query, builder) ->
                 builder.or(
                         builder.between(root.get("dtStart"), startTime, endTime),

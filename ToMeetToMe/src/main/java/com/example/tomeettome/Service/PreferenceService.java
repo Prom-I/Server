@@ -8,14 +8,11 @@ import com.example.tomeettome.Repository.CalendarPermissionRepository;
 import com.example.tomeettome.Repository.ScheduleRepository;
 import com.example.tomeettome.Repository.TeamRepository;
 import lombok.extern.slf4j.Slf4j;
-import net.bytebuddy.asm.Advice;
-import net.fortuna.ical4j.model.WeekDay;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.jpa.domain.Specification;
-import org.springframework.data.relational.core.sql.In;
 import org.springframework.stereotype.Service;
 
-import java.sql.Date;
+import java.sql.Time;
 import java.sql.Timestamp;
 import java.time.DayOfWeek;
 import java.time.LocalDate;
@@ -34,6 +31,7 @@ public class PreferenceService {
     @Autowired ScheduleRepository scheduleRepository;
 
     public PreferenceEntity create(PreferenceEntity entity, List<String> preferredDays, String icsFileName) {
+        final long oneHourInMillis = 60 * 60 * 1000;
 
         // 조건 설정 (소요 시간, 기간대, 시간대, 선호 요일)
         // 20231207T090000Z : T를 기준으로 앞이 DayScope, 뒤가 TimeScope
@@ -59,7 +57,6 @@ public class PreferenceService {
             times.add(String.valueOf(time));
         }
 
-        log.info("times = " + times);
         // 날짜 사이의 일 수 계산
         // Math.toIntExact : int 범위를 초과하면 ArithmeticException throw, Java 8부터 지원
         // ChronoUnit.DAYS.between은 마지막 날짜를 포함하지 않으므로 +1 해줘야함
@@ -100,112 +97,173 @@ public class PreferenceService {
             preferredDateTimes.add(formatDateAndTime(date, times.get(times.size()-1)));
         }
 
+        schedules.addAll(findSchedulesWithPreferences(preferredDateTimes));
+
+
+        System.out.println("");
+        // 참석자와 불참석자의 각 List를 담은 class
+        class AttendanceRecord {
+            List<String> attendee;
+            List<String> absentee;
+
+            public AttendanceRecord(List<String> attendee) {
+                this.attendee = attendee;
+                this.absentee = new ArrayList<>();
+            }
+        }
+
+        // 각 Indexing Block, Timestamp 별로 참석자와 불참석자 List를 가짐
+        class AppointmentBlock {
+            Timestamp startTime;
+            AttendanceRecord attendanceRecord;
+        }
+
+
+        // 각 Timestamp마다 빈도 수를 저장할 class
+        // 예를 들어, 이 날에 10명 되는 시간 5개 있어요 !
+//        class AttendanceStatistics {
+//            int numberOfAttendees;
+//            int frequency;
+//
+//            public AttendanceStatistics(int numberOfAttendees, int frequency) {
+//                this.numberOfAttendees = numberOfAttendees;
+//                this.frequency = frequency;
+//            }
+//
+//            public int getNumberOfAttendees() {
+//                return numberOfAttendees;
+//            }
+//        }
+
+        HashMap<Timestamp, AttendanceRecord> appointmentBlock = new HashMap<>();
+
+        HashMap<LocalDate, HashMap<Integer, Integer>> dateStatistics = new HashMap<>();
+
+        TreeMap<LocalDate, Integer> score = new TreeMap<>();
+
+        // 전체 Team의 UserId를 가져옴
+        List<String> userIdList = new ArrayList<>();
         for (CalendarPermissionEntity p : permissions) {
-            schedules.addAll(findSchedulesWithPreferences(preferredDateTimes));
-            log.info("Schedules : " + schedules);
+            userIdList.add(p.getUserId());
         }
 
-//        HashMap<Date, DayData>: 여기서 DayData는 다음과 같은 정보를 저장하는 클래스입니다:
-//        HashMap<Timestamp, Integer>: 시간대별 겹치는 인원 수.
-//        int minFrequency: 최소값 빈도수.
-//        int minValue: 해당 날짜의 최소값.
-        class DayInfo {
-            HashMap<Timestamp, List<String>> conflictUsersByTime; // 시간대별 겹치는 인원.
-            int minFrequency; // 최소값 빈도수 : 각 날짜에 해당하는 최소값의 개수
-            int minValue; // 해당 날짜의 최소값
-
-            public DayInfo() {
-                this.minFrequency = 0;
-                this.minValue = 0;
-            }
-        }
-        HashMap<LocalDate, DayInfo> options = new HashMap<>();
-
-        // 초기 블록 생성
-        for (LocalDate date : datesWithSpecificDays) {
-            DayInfo dayInfo = new DayInfo();
-            dayInfo.conflictUsersByTime = new HashMap<>();
-            for (String time : times) {
-                dayInfo.conflictUsersByTime.put(formatDateAndTime(date, time), new ArrayList<>());
-                options.put(date, dayInfo);
-            }
-        }
-
-        long oneHourInMillis = 60 * 60 * 1000;
-        for (ScheduleEntity schedule : schedules) {
-
-            Timestamp startTime = schedule.getDtStart();
-            Timestamp endTime = schedule.getDtEnd();
-            
-            LocalDate startLocalDate = startTime.toLocalDateTime().toLocalDate();
-            LocalDate endLocalDate = endTime.toLocalDateTime().toLocalDate();
-
-            if(endTime.getMinutes() != 0) {
-                endTime.setTime(endTime.getTime() + oneHourInMillis);
-            }
-            int term = endTime.getHours() - startTime.getHours();
-            if (duration != 1) term += 1;
-
-            // duration 때문에 위로 올려치기
-            if(startTime.getHours() != Integer.parseInt(times.get(0)))
-                startTime.setTime(startTime.getTime() -(oneHourInMillis * (duration-1)));
-
-            // 분단위 내림
-            startTime.setMinutes(0);
-
-            Timestamp key = startTime;
-
-            // 시나리오
-            // 각 블록에 대해 일정이 있는 유저의 userId를 conflictUsersByTime 안의 List<String>에 넣음
-            // 처음엔 먼저 들어가는 게 minValue로 지정됨
-            // 그다음부턴 min
-
-            DayInfo dayInfo = options.get(startLocalDate);
-
-            dayInfo.conflictUsersByTime.get(startTime).add(schedule.getIcsFileName().substring(0,schedule.getIcsFileName().length()-4));
-            dayInfo.minValue = dayInfo.conflictUsersByTime.get(startTime).size();
-            dayInfo.minFrequency = 1;
-            startTime.setTime(startTime.getTime() + oneHourInMillis );
-
-            for (int i = 1; i < term; i++) {
-                //
-                // 안되는 user에 userId 추가
-                dayInfo.conflictUsersByTime.get(startTime).add(schedule.getIcsFileName().substring(0,schedule.getIcsFileName().length()-4));
-                // userId를 추가하고, Date의 최솟값과 최솟값의 빈도수 update
-                // dayInfo의 minValue 값 ==  dayInfo의 List Size 와 같을 경우 minFreq++
-                // dayInfo의 minValue 값 < dayInfo의 List의 Size
-                // dayInfo의 minValue 값 < dayInfo의 List의 Size 경우는 존재하지 않음
-                if(dayInfo.minValue == dayInfo.conflictUsersByTime.get(startTime).size()) {
-                    dayInfo.minFrequency += 1;
+        // Appointment Block init
+        for (int k = 0; k < datesWithSpecificDays.size(); k++) {
+            Timestamp startTime = new Timestamp(preferredDateTimes.get(k * 2).getTime());
+            for (int i = 0; i < timeRange; i++) {
+                List<String> uiList = new ArrayList<>();
+                for (String user : userIdList) {
+                    uiList.add(user);
                 }
-                if(dayInfo.minValue < dayInfo.conflictUsersByTime.get(startTime).size()) {
-                    dayInfo.minFrequency -= 1;
-                }
-                startTime.setTime(startTime.getTime() + oneHourInMillis );
+                AttendanceRecord attendanceRecord = new AttendanceRecord(uiList);
+                appointmentBlock.put(new Timestamp(startTime.getTime()), attendanceRecord);
+                startTime.setTime(startTime.getTime() + oneHourInMillis);
             }
         }
+        // dateStatistics init
+        for (LocalDate date: datesWithSpecificDays){
+            HashMap<Integer,Integer> attendanceStatistics = new HashMap<>();
+            for (int i = 0; i <= permissions.size(); i++) {
+                if(i == permissions.size()) {
+                    attendanceStatistics.put(permissions.size(),timeRange);
+                }
+                else {
+                    attendanceStatistics.put(i,0);
+                }
+            }
+            dateStatistics.put(date,attendanceStatistics);
+        }
 
-        // minValue가 0이 있는지를 확인하기 위해 Day에 해당하는 반복 수행
-        //options에 각 날짜에 해당하는 내용을 확인
+        for (Timestamp timestamp : appointmentBlock.keySet()) {
+            for (ScheduleEntity schedule : schedules) {
+                if (isTimestampRangeContained(schedule.getDtStart(), schedule.getDtEnd(), timestamp, new Timestamp(timestamp.getTime() + (oneHourInMillis * duration)))) {
+                    System.out.println("timestamp = " + timestamp);
+                        int prev = appointmentBlock.get(timestamp).attendee.size();
+                        if(prev != 0){
+                            int next = prev - 1;
+                            //appointmentBlock.get(timestamp).attendee.remove(getUserIdFromIcsFileName(schedule.getIcsFileName()));
+                            appointmentBlock.get(timestamp).attendee.remove(schedule.getIcsFileName());
+                            appointmentBlock.get(timestamp).absentee.add(schedule.getIcsFileName());
+                            dateStatistics.get(timestamp.toLocalDateTime().toLocalDate()).put(prev, dateStatistics.get(timestamp.toLocalDateTime().toLocalDate()).get(prev)-1);
+                            dateStatistics.get(timestamp.toLocalDateTime().toLocalDate()).put(next, dateStatistics.get(timestamp.toLocalDateTime().toLocalDate()).get(next)+1);
+                        } else{
+                            appointmentBlock.get(timestamp).attendee.remove(schedule.getIcsFileName());
+                            appointmentBlock.get(timestamp).absentee.add(schedule.getIcsFileName());
+                            dateStatistics.get(timestamp.toLocalDateTime().toLocalDate()).put(prev, dateStatistics.get(timestamp.toLocalDateTime().toLocalDate()).get(prev)-1);
+                        }
 
-
-        for (LocalDate date : options.keySet()) {
-            DayInfo dayInfo = options.get(date);
-            for (Timestamp time : dayInfo.conflictUsersByTime.keySet()) {
-                if(options.get(date).conflictUsersByTime.get(time).equals(null)) {
-                    // minFreq & minValue 수정
-                    if(dayInfo.minValue == 0) {
-                        dayInfo.minFrequency += 1;
-                    }
-                    else {
-                        dayInfo.minValue = 0;
-                        dayInfo.minFrequency = 1;
-                    }
                 }
             }
         }
-        System.out.println("해벌레");
+        System.out.println("GG");
+//
+//
+//
+//
+//            Timestamp startTime = schedule.getDtStart();
+//            Timestamp endTime = schedule.getDtEnd();
+//
+//            LocalDate startLocalDate = startTime.toLocalDateTime().toLocalDate();
+//            LocalDate endLocalDate = endTime.toLocalDateTime().toLocalDate();
+//
+//            Timestamp key = startTime;
+//
+//            // Scenario
+//            // Timestamp마다 iteration 돌면서 모든 schedule들이 포함되는지 전부 확인 -> 가능한 user들의 배열에서 소거하면서 순회
+//            // 여기서, Schedule을 Day를 기준으로 정렬할까? Collections.sort()로 사용자 정의 정렬을 할 수 있음. 최악의 경우에도 O(nlogn)이 보장 됨.
+//            // 하나의 TimeStamp를 돌때마다 TreeMap에 <Timestamp, possibleUsercount> 추가, value를 기준으로 정렬되는 TreeMap
+//            // TreeMap에 모든 Day의 Timestamp에 해당하는 possibleUserCount를 넣고 뽑아내서 추천
+//
+//
+//            AttendeeDetails attendeeDetails = options.get(startLocalDate);
+//
+//            attendeeDetails.conflictUsersByTime.get(startTime).add(schedule.getIcsFileName().substring(0,schedule.getIcsFileName().length()-4));
+//            attendeeDetails.minValue = attendeeDetails.conflictUsersByTime.get(startTime).size();
+//            attendeeDetails.minFrequency = 1;
+//            startTime.setTime(startTime.getTime() + oneHourInMillis );
+//
+//            for (int i = 1; i < term; i++) {
+//                //
+//                // 안되는 user에 userId 추가
+//                attendeeDetails.conflictUsersByTime.get(startTime).add(schedule.getIcsFileName().substring(0,schedule.getIcsFileName().length()-4));
+//                // userId를 추가하고, Date의 최솟값과 최솟값의 빈도수 update
+//                // dayInfo의 minValue 값 ==  dayInfo의 List Size 와 같을 경우 minFreq++
+//                // dayInfo의 minValue 값 < dayInfo의 List의 Size
+//                // dayInfo의 minValue 값 < dayInfo의 List의 Size 경우는 존재하지 않음
+//                if(attendeeDetails.minValue == attendeeDetails.conflictUsersByTime.get(startTime).size()) {
+//                    attendeeDetails.minFrequency += 1;
+//                }
+//                if(attendeeDetails.minValue < attendeeDetails.conflictUsersByTime.get(startTime).size()) {
+//                    attendeeDetails.minFrequency -= 1;
+//                }
+//                startTime.setTime(startTime.getTime() + oneHourInMillis );
+//            }
+//        }
+//
+//        // minValue가 0이 있는지를 확인하기 위해 Day에 해당하는 반복 수행
+//        //options에 각 날짜에 해당하는 내용을 확인
+//
+//
+//        for (LocalDate date : options.keySet()) {
+//            AttendeeDetails attendeeDetails = options.get(date);
+//            for (Timestamp time : attendeeDetails.conflictUsersByTime.keySet()) {
+//                if(options.get(date).conflictUsersByTime.get(time).equals(null)) {
+//                    // minFreq & minValue 수정
+//                    if(attendeeDetails.minValue == 0) {
+//                        attendeeDetails.minFrequency += 1;
+//                    }
+//                    else {
+//                        attendeeDetails.minValue = 0;
+//                        attendeeDetails.minFrequency = 1;
+//                    }
+//                }
+//            }
+//        }
         return null;
+    }
+
+    private static String getUserIdFromIcsFileName(String icsFileName) {
+        return icsFileName.substring(0, icsFileName.length() - 4);
     }
 
     public static boolean isTimestampRangeContained(Timestamp startA, Timestamp endA, Timestamp startB, Timestamp endB) {
@@ -220,7 +278,6 @@ public class PreferenceService {
                 || (endA.after(startB)&&endA.before(endB))
                 || (startA.after(startB)&&startA.before(endB))
                 || (startB.before(startA) && endB.after(endA));
-
     }
 
     public List<ScheduleEntity> findSchedulesWithPreferences(List<Timestamp> preferredDateTimes) {
