@@ -39,6 +39,9 @@ public interface ScheduleRepository extends JpaRepository<ScheduleEntity, String
                 );
     }
 
+    static Specification<ScheduleEntity> hasTeam(String userId) {
+        return (root, query, builder) -> builder.equal(root.get("icsFileName"), userId+".ics");
+    }
 
 }
 
