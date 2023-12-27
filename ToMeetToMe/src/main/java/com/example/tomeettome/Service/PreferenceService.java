@@ -20,6 +20,8 @@ import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.time.temporal.ChronoUnit;
 import java.util.*;
+import java.util.AbstractMap.SimpleEntry;
+
 
 @Slf4j
 @Service
@@ -31,6 +33,7 @@ public class PreferenceService {
     @Autowired ScheduleRepository scheduleRepository;
 
     public PreferenceEntity create(PreferenceEntity entity, List<String> preferredDays, String icsFileName) {
+        long beforeTime = System.currentTimeMillis(); //코드 실행 전에 시간 받아오기
         final long oneHourInMillis = 60 * 60 * 1000;
 
         // 조건 설정 (소요 시간, 기간대, 시간대, 선호 요일)
@@ -97,10 +100,14 @@ public class PreferenceService {
             preferredDateTimes.add(formatDateAndTime(date, times.get(times.size()-1)));
         }
 
-        schedules.addAll(findSchedulesWithPreferences(preferredDateTimes));
+        // 전체 Team의 UserId를 가져옴
+        List<String> userIdList = new ArrayList<>();
+        for (CalendarPermissionEntity p : permissions) {
+            userIdList.add(p.getUserId());
+        }
 
+        schedules.addAll(findSchedulesWithPreferences(preferredDateTimes, userIdList));
 
-        System.out.println("");
         // 참석자와 불참석자의 각 List를 담은 class
         class AttendanceRecord {
             List<String> attendee;
@@ -139,13 +146,9 @@ public class PreferenceService {
 
         HashMap<LocalDate, HashMap<Integer, Integer>> dateStatistics = new HashMap<>();
 
-        TreeMap<LocalDate, Integer> score = new TreeMap<>();
+        TreeMap<LocalDate, String> score = new TreeMap<>();
 
-        // 전체 Team의 UserId를 가져옴
-        List<String> userIdList = new ArrayList<>();
-        for (CalendarPermissionEntity p : permissions) {
-            userIdList.add(p.getUserId());
-        }
+
 
         // Appointment Block init
         for (int k = 0; k < datesWithSpecificDays.size(); k++) {
@@ -160,41 +163,69 @@ public class PreferenceService {
                 startTime.setTime(startTime.getTime() + oneHourInMillis);
             }
         }
+
         // dateStatistics init
         for (LocalDate date: datesWithSpecificDays){
-            HashMap<Integer,Integer> attendanceStatistics = new HashMap<>();
-            for (int i = 0; i <= permissions.size(); i++) {
-                if(i == permissions.size()) {
-                    attendanceStatistics.put(permissions.size(),timeRange);
+                HashMap<Integer,Integer> attendanceStatistics = new HashMap<>();
+                for (int i = 0; i <= permissions.size(); i++) {
+                    if(i == permissions.size()) {
+                        attendanceStatistics.put(permissions.size(),timeRange);
+                    }
+                    else {
+                        attendanceStatistics.put(i,0);
+                    }
                 }
-                else {
-                    attendanceStatistics.put(i,0);
-                }
-            }
-            dateStatistics.put(date,attendanceStatistics);
+                dateStatistics.put(date,attendanceStatistics);
         }
 
+//
         for (Timestamp timestamp : appointmentBlock.keySet()) {
             for (ScheduleEntity schedule : schedules) {
                 if (isTimestampRangeContained(schedule.getDtStart(), schedule.getDtEnd(), timestamp, new Timestamp(timestamp.getTime() + (oneHourInMillis * duration)))) {
-                    System.out.println("timestamp = " + timestamp);
-                        int prev = appointmentBlock.get(timestamp).attendee.size();
-                        if(prev != 0){
-                            int next = prev - 1;
-                            //appointmentBlock.get(timestamp).attendee.remove(getUserIdFromIcsFileName(schedule.getIcsFileName()));
-                            appointmentBlock.get(timestamp).attendee.remove(schedule.getIcsFileName());
-                            appointmentBlock.get(timestamp).absentee.add(schedule.getIcsFileName());
-                            dateStatistics.get(timestamp.toLocalDateTime().toLocalDate()).put(prev, dateStatistics.get(timestamp.toLocalDateTime().toLocalDate()).get(prev)-1);
-                            dateStatistics.get(timestamp.toLocalDateTime().toLocalDate()).put(next, dateStatistics.get(timestamp.toLocalDateTime().toLocalDate()).get(next)+1);
-                        } else{
-                            appointmentBlock.get(timestamp).attendee.remove(schedule.getIcsFileName());
-                            appointmentBlock.get(timestamp).absentee.add(schedule.getIcsFileName());
-                            dateStatistics.get(timestamp.toLocalDateTime().toLocalDate()).put(prev, dateStatistics.get(timestamp.toLocalDateTime().toLocalDate()).get(prev)-1);
-                        }
-
+                    if(appointmentBlock.get(timestamp).attendee.remove(getUserIdFromIcsFileName(schedule.getIcsFileName()))) {
+                        int prev = appointmentBlock.get(timestamp).attendee.size() + 1;
+                        int next = prev - 1;
+                        appointmentBlock.get(timestamp).absentee.add(getUserIdFromIcsFileName(schedule.getIcsFileName()));
+                        //                    appointmentBlock.get(timestamp).attendee.remove(schedule.getIcsFileName());
+                        //                    appointmentBlock.get(timestamp).absentee.add(schedule.getIcsFileName());
+                        dateStatistics.get(timestamp.toLocalDateTime().toLocalDate()).put(prev, dateStatistics.get(timestamp.toLocalDateTime().toLocalDate()).get(prev)-1);
+                        dateStatistics.get(timestamp.toLocalDateTime().toLocalDate()).put(next, dateStatistics.get(timestamp.toLocalDateTime().toLocalDate()).get(next)+1);
+                    }
                 }
             }
         }
+
+        // 날짜별 appointment block 세팅 완료
+        // score 변수 init
+        for (LocalDate date: dateStatistics.keySet()) {
+            String scoreString = "";
+            for (int i = dateStatistics.get(date).size()-1; i >= 0; i--) {
+                if(dateStatistics.get(date).get(i) < 10){
+                    scoreString += i + "0" + dateStatistics.get(date).get(i).toString();
+                }else{
+                    scoreString += i + dateStatistics.get(date).get(i).toString();
+                }
+            }
+            score.put(date,scoreString);
+        }
+
+        // TreeMap의 entrySet을 리스트로 변환
+        List<Map.Entry<LocalDate, String>> entries = new ArrayList<>(score.entrySet());
+        // 리스트를 값 기준으로 정렬
+        entries.sort(Map.Entry.comparingByValue(Collections.reverseOrder()));
+
+        System.out.println("entries.get(0) = " + entries.get(0));
+        System.out.println("entries.get(1) = " + entries.get(1));
+        System.out.println("entries.get(2) = " + entries.get(2));
+
+        System.out.println("GG");
+
+
+
+
+        long afterTime = System.currentTimeMillis(); // 코드 실행 후에 시간 받아오기
+        long secDiffTime = (afterTime - beforeTime); //두 시간에 차 계산
+        System.out.println("시간차이(m) : "+secDiffTime);
         System.out.println("GG");
 //
 //
@@ -273,17 +304,21 @@ public class PreferenceService {
         // case 3 : schedule의 end가 IB의 start와 end 사이에 있는 경우, 위로 걸쳐있는 경우
         // case 4 : schedule의 start가 IB의 start와 end 사이에 있는 경우,아래로 걸쳐있는 경우
         // case 5 : schedule의 start, end가 IB에 쏙 들어가 있는 경우, start와 end가 겹쳐지지 않고
+        // case 6 : schedule의 start, end가 IB를 완전히 감싸는 경우
         return startA.equals(startB)
                 || endA.equals(endB)
                 || (endA.after(startB)&&endA.before(endB))
                 || (startA.after(startB)&&startA.before(endB))
-                || (startB.before(startA) && endB.after(endA));
+                || (startB.before(startA) && endB.after(endA))
+                || (startA.before(startB)&&endA.after(endB));
+
     }
 
-    public List<ScheduleEntity> findSchedulesWithPreferences(List<Timestamp> preferredDateTimes) {
+    public List<ScheduleEntity> findSchedulesWithPreferences(List<Timestamp> preferredDateTimes, List<String> userIdList) {
         List<ScheduleEntity> result = new ArrayList<>();
 
         Specification<ScheduleEntity> timeSpec = null;
+        Specification<ScheduleEntity> teamSpec = null;
 
         log.info("combined " + preferredDateTimes.get(0));
 
@@ -292,10 +327,17 @@ public class PreferenceService {
             timeSpec = (timeSpec == null) ? currentSpec : timeSpec.or(currentSpec);
         }
 
-        result.addAll(scheduleRepository.findAll(timeSpec));
+        for (String userId : userIdList) {
+            Specification<ScheduleEntity> currentSpec = ScheduleRepository.hasTeam(userId);
+            teamSpec = (teamSpec == null) ? currentSpec : teamSpec.or(currentSpec);
+        }
+
+        result.addAll(scheduleRepository.findAll(timeSpec.and(teamSpec)));
         log.info("result" + result.size());
         return result;
     }
+
+
 
     public Set<DayOfWeek> changeStringToDayOfWeek(List<String> days) {
         // 변환할 Set 초기화
