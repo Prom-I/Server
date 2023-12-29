@@ -32,9 +32,11 @@ public class PreferenceService {
     @Autowired CalendarPermissionRepository calendarPermissionRepository;
     @Autowired ScheduleRepository scheduleRepository;
 
+    final long oneHourInMillis = 60 * 60 * 1000;
+
     public PreferenceEntity create(PreferenceEntity entity, List<String> preferredDays, String icsFileName) {
         long beforeTime = System.currentTimeMillis(); //코드 실행 전에 시간 받아오기
-        final long oneHourInMillis = 60 * 60 * 1000;
+
 
         // 조건 설정 (소요 시간, 기간대, 시간대, 선호 요일)
         // 20231207T090000Z : T를 기준으로 앞이 DayScope, 뒤가 TimeScope
@@ -106,8 +108,9 @@ public class PreferenceService {
             userIdList.add(p.getUserId());
         }
 
-        schedules.addAll(findSchedulesWithPreferences(preferredDateTimes, userIdList));
+        schedules.addAll(findSchedulesWithPreferences(preferredDateTimes, userIdList, duration));
 
+        System.out.println("dd");
         // 참석자와 불참석자의 각 List를 담은 class
         class AttendanceRecord {
             List<String> attendee;
@@ -214,9 +217,9 @@ public class PreferenceService {
         // 리스트를 값 기준으로 정렬
         entries.sort(Map.Entry.comparingByValue(Collections.reverseOrder()));
 
-        System.out.println("entries.get(0) = " + entries.get(0));
-        System.out.println("entries.get(1) = " + entries.get(1));
-        System.out.println("entries.get(2) = " + entries.get(2));
+//        System.out.println("entries.get(0) = " + entries.get(0));
+//        System.out.println("entries.get(1) = " + entries.get(1));
+//        System.out.println("entries.get(2) = " + entries.get(2));
 
         System.out.println("GG");
 
@@ -314,7 +317,7 @@ public class PreferenceService {
 
     }
 
-    public List<ScheduleEntity> findSchedulesWithPreferences(List<Timestamp> preferredDateTimes, List<String> userIdList) {
+    public List<ScheduleEntity> findSchedulesWithPreferences(List<Timestamp> preferredDateTimes, List<String> userIdList, int duration) {
         List<ScheduleEntity> result = new ArrayList<>();
 
         Specification<ScheduleEntity> timeSpec = null;
@@ -322,8 +325,14 @@ public class PreferenceService {
 
         log.info("combined " + preferredDateTimes.get(0));
 
+        // preferredDateTimes에는 지금 날짜별로 처음, 끝 scope - duration만 들어 있음
+
         for (int i = 0; i < preferredDateTimes.size(); i += 2) {
-            Specification<ScheduleEntity> currentSpec = ScheduleRepository.hasPreferredTimeRange(preferredDateTimes.get(i), preferredDateTimes.get(i+1));
+            Timestamp start = preferredDateTimes.get(i);
+            Timestamp end = preferredDateTimes.get(i+1);
+            end.setTime(end.getTime() + (oneHourInMillis * duration));
+
+            Specification<ScheduleEntity> currentSpec = ScheduleRepository.hasPreferredTimeRange(start, end);
             timeSpec = (timeSpec == null) ? currentSpec : timeSpec.or(currentSpec);
         }
 
