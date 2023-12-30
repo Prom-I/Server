@@ -30,19 +30,12 @@ public class PreferenceEntity {
     private String teamOriginKey;
     private String organizerId; // 약속을 만든 사람, 약속을 수정하고 확정할 수 있는 권한자
 
-    private String summary;
     private LocalDateTime dtStart;
     private LocalDateTime dtEnd;
-    private String location;
 
-    private String duration; // P15DT5H0M20S : 15Days 5Hours 0Minutes 20Seconds
-                             // PT2H : 2Hours
-    private String startScope; // T를 기준으로 앞은 dayScope, 뒤는 timeScope
-    private String endScope;
+    private int likes; // 좋아요 누른 사람 수
 
-    private String possibleUserCount;
     private String status;
-    private String allDay;
 
     @UpdateTimestamp
     private LocalDateTime lastModifiedAt;

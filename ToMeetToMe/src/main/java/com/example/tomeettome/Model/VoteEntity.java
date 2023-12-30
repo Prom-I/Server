@@ -22,11 +22,13 @@ public class VoteEntity {
     @GeneratedValue(generator = "system-uuid")
     @GenericGenerator(name = "system-uuid", strategy = "uuid")
     private String originKey;
-    private String userOriginKey;
-    private String preferenceOriginKey;
+    private String userUid;
+    private String preferenceUid;
 
     @UpdateTimestamp
     private LocalDateTime lastModifiedAt;
     @CreationTimestamp
     private LocalDateTime createdAt;
+
+
 }
