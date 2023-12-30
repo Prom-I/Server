@@ -1,10 +1,12 @@
 package com.example.tomeettome.Service;
 
+import com.example.tomeettome.DTO.CaldavDTO;
 import com.example.tomeettome.Model.CalendarPermissionEntity;
 import com.example.tomeettome.Model.PreferenceEntity;
 import com.example.tomeettome.Model.ScheduleEntity;
 import com.example.tomeettome.Model.TeamEntity;
 import com.example.tomeettome.Repository.CalendarPermissionRepository;
+import com.example.tomeettome.Repository.PreferenceRepository;
 import com.example.tomeettome.Repository.ScheduleRepository;
 import com.example.tomeettome.Repository.TeamRepository;
 import lombok.extern.slf4j.Slf4j;
@@ -26,6 +28,8 @@ import java.util.AbstractMap.SimpleEntry;
 @Slf4j
 @Service
 public class PreferenceService {
+    @Autowired
+    private PreferenceRepository preferenceRepository;
 
     @Autowired CalendarService calendarService;
     @Autowired TeamRepository teamRepository;
@@ -34,21 +38,20 @@ public class PreferenceService {
 
     final long oneHourInMillis = 60 * 60 * 1000;
 
-    public PreferenceEntity create(PreferenceEntity entity, List<String> preferredDays, String icsFileName) {
+    public List<PreferenceEntity> create(PreferenceEntity entity, String icsFileName, CaldavDTO.Precondition precondition) {
         long beforeTime = System.currentTimeMillis(); //코드 실행 전에 시간 받아오기
-
 
         // 조건 설정 (소요 시간, 기간대, 시간대, 선호 요일)
         // 20231207T090000Z : T를 기준으로 앞이 DayScope, 뒤가 TimeScope
         // 20231219T210000Z
-        String [] startScope = entity.getStartScope().split("T");
-        String [] endScope = entity.getEndScope().split("T");
+        String [] startScope = precondition.getStartScope().split("T");
+        String [] endScope = precondition.getEndScope().split("T");
 
         // Day Scope Parsing
         LocalDate startDayScope = LocalDate.parse(startScope[0], DateTimeFormatter.ofPattern("yyyyMMdd"));
         LocalDate endDayScope = LocalDate.parse(endScope[0], DateTimeFormatter.ofPattern("yyyyMMdd"));
 
-        int duration = Integer.parseInt(entity.getDuration().substring(2).split("H")[0]);
+        int duration = Integer.parseInt(precondition.getDuration().substring(2).split("H")[0]);
         // Time Scope Parsing, 하루에 가능한 블록 개수 : end-duration-start+1
         // 예시로, timeScope=09~21, duration=2라면 마지막 블록이 19~21 블록이므로 이런 계산이 나옴
         int timeRange = Integer.parseInt(endScope[1].substring(0,2))
@@ -72,7 +75,7 @@ public class PreferenceService {
         Set<Integer> includedDays = new HashSet<>();
 
         // preferredDays가 String 형태로 들어왔기 때문에 parseInt로 바꿔서 넣어줌 -> 에러처리 해야함!
-        for(String day : preferredDays) {
+        for(String day : precondition.getPreferredDays()) {
             includedDays.add(Integer.parseInt(day));
         }
 
@@ -82,7 +85,7 @@ public class PreferenceService {
 
         log.info("datesSpecific = " + datesWithSpecificDays);
         // 가능한 총 갯수 : 날짜 갯수 * 하루에 일정을 잡을 수 있는 갯수
-        int availableCounts = datesWithSpecificDays.size() * timeRange;
+//        int availableCounts = datesWithSpecificDays.size() * timeRange;
 
         // 팀원들의 일정을 요구 조건에 맞게 추출하는 로직
         // 팀원들 각각 일정을 뽑아야 하니까
@@ -122,36 +125,16 @@ public class PreferenceService {
             }
         }
 
-        // 각 Indexing Block, Timestamp 별로 참석자와 불참석자 List를 가짐
-        class AppointmentBlock {
-            Timestamp startTime;
-            AttendanceRecord attendanceRecord;
-        }
-
-
-        // 각 Timestamp마다 빈도 수를 저장할 class
-        // 예를 들어, 이 날에 10명 되는 시간 5개 있어요 !
-//        class AttendanceStatistics {
-//            int numberOfAttendees;
-//            int frequency;
-//
-//            public AttendanceStatistics(int numberOfAttendees, int frequency) {
-//                this.numberOfAttendees = numberOfAttendees;
-//                this.frequency = frequency;
-//            }
-//
-//            public int getNumberOfAttendees() {
-//                return numberOfAttendees;
-//            }
+//        // 각 Indexing Block, Timestamp 별로 참석자와 불참석자 List를 가짐
+//        class AppointmentBlock {
+//            Timestamp startTime;
+//            AttendanceRecord attendanceRecord;
 //        }
 
         HashMap<Timestamp, AttendanceRecord> appointmentBlock = new HashMap<>();
-
         HashMap<LocalDate, HashMap<Integer, Integer>> dateStatistics = new HashMap<>();
 
         TreeMap<LocalDate, String> score = new TreeMap<>();
-
-
 
         // Appointment Block init
         for (int k = 0; k < datesWithSpecificDays.size(); k++) {
@@ -181,7 +164,6 @@ public class PreferenceService {
                 dateStatistics.put(date,attendanceStatistics);
         }
 
-//
         for (Timestamp timestamp : appointmentBlock.keySet()) {
             for (ScheduleEntity schedule : schedules) {
                 if (isTimestampRangeContained(schedule.getDtStart(), schedule.getDtEnd(), timestamp, new Timestamp(timestamp.getTime() + (oneHourInMillis * duration)))) {
@@ -189,8 +171,8 @@ public class PreferenceService {
                         int prev = appointmentBlock.get(timestamp).attendee.size() + 1;
                         int next = prev - 1;
                         appointmentBlock.get(timestamp).absentee.add(getUserIdFromIcsFileName(schedule.getIcsFileName()));
-                        //                    appointmentBlock.get(timestamp).attendee.remove(schedule.getIcsFileName());
-                        //                    appointmentBlock.get(timestamp).absentee.add(schedule.getIcsFileName());
+                        //appointmentBlock.get(timestamp).attendee.remove(schedule.getIcsFileName());
+                        //appointmentBlock.get(timestamp).absentee.add(schedule.getIcsFileName());
                         dateStatistics.get(timestamp.toLocalDateTime().toLocalDate()).put(prev, dateStatistics.get(timestamp.toLocalDateTime().toLocalDate()).get(prev)-1);
                         dateStatistics.get(timestamp.toLocalDateTime().toLocalDate()).put(next, dateStatistics.get(timestamp.toLocalDateTime().toLocalDate()).get(next)+1);
                     }
@@ -217,84 +199,42 @@ public class PreferenceService {
         // 리스트를 값 기준으로 정렬
         entries.sort(Map.Entry.comparingByValue(Collections.reverseOrder()));
 
-//        System.out.println("entries.get(0) = " + entries.get(0));
-//        System.out.println("entries.get(1) = " + entries.get(1));
-//        System.out.println("entries.get(2) = " + entries.get(2));
-
-        System.out.println("GG");
-
-
-
+        System.out.println("entries.get(0) = " + entries.get(0));
+        System.out.println("entries.get(1) = " + entries.get(1));
+        System.out.println("entries.get(2) = " + entries.get(2));
 
         long afterTime = System.currentTimeMillis(); // 코드 실행 후에 시간 받아오기
         long secDiffTime = (afterTime - beforeTime); //두 시간에 차 계산
         System.out.println("시간차이(m) : "+secDiffTime);
         System.out.println("GG");
-//
-//
-//
-//
-//            Timestamp startTime = schedule.getDtStart();
-//            Timestamp endTime = schedule.getDtEnd();
-//
-//            LocalDate startLocalDate = startTime.toLocalDateTime().toLocalDate();
-//            LocalDate endLocalDate = endTime.toLocalDateTime().toLocalDate();
-//
-//            Timestamp key = startTime;
-//
-//            // Scenario
-//            // Timestamp마다 iteration 돌면서 모든 schedule들이 포함되는지 전부 확인 -> 가능한 user들의 배열에서 소거하면서 순회
-//            // 여기서, Schedule을 Day를 기준으로 정렬할까? Collections.sort()로 사용자 정의 정렬을 할 수 있음. 최악의 경우에도 O(nlogn)이 보장 됨.
-//            // 하나의 TimeStamp를 돌때마다 TreeMap에 <Timestamp, possibleUsercount> 추가, value를 기준으로 정렬되는 TreeMap
-//            // TreeMap에 모든 Day의 Timestamp에 해당하는 possibleUserCount를 넣고 뽑아내서 추천
-//
-//
-//            AttendeeDetails attendeeDetails = options.get(startLocalDate);
-//
-//            attendeeDetails.conflictUsersByTime.get(startTime).add(schedule.getIcsFileName().substring(0,schedule.getIcsFileName().length()-4));
-//            attendeeDetails.minValue = attendeeDetails.conflictUsersByTime.get(startTime).size();
-//            attendeeDetails.minFrequency = 1;
-//            startTime.setTime(startTime.getTime() + oneHourInMillis );
-//
-//            for (int i = 1; i < term; i++) {
-//                //
-//                // 안되는 user에 userId 추가
-//                attendeeDetails.conflictUsersByTime.get(startTime).add(schedule.getIcsFileName().substring(0,schedule.getIcsFileName().length()-4));
-//                // userId를 추가하고, Date의 최솟값과 최솟값의 빈도수 update
-//                // dayInfo의 minValue 값 ==  dayInfo의 List Size 와 같을 경우 minFreq++
-//                // dayInfo의 minValue 값 < dayInfo의 List의 Size
-//                // dayInfo의 minValue 값 < dayInfo의 List의 Size 경우는 존재하지 않음
-//                if(attendeeDetails.minValue == attendeeDetails.conflictUsersByTime.get(startTime).size()) {
-//                    attendeeDetails.minFrequency += 1;
-//                }
-//                if(attendeeDetails.minValue < attendeeDetails.conflictUsersByTime.get(startTime).size()) {
-//                    attendeeDetails.minFrequency -= 1;
-//                }
-//                startTime.setTime(startTime.getTime() + oneHourInMillis );
-//            }
-//        }
-//
-//        // minValue가 0이 있는지를 확인하기 위해 Day에 해당하는 반복 수행
-//        //options에 각 날짜에 해당하는 내용을 확인
-//
-//
-//        for (LocalDate date : options.keySet()) {
-//            AttendeeDetails attendeeDetails = options.get(date);
-//            for (Timestamp time : attendeeDetails.conflictUsersByTime.keySet()) {
-//                if(options.get(date).conflictUsersByTime.get(time).equals(null)) {
-//                    // minFreq & minValue 수정
-//                    if(attendeeDetails.minValue == 0) {
-//                        attendeeDetails.minFrequency += 1;
-//                    }
-//                    else {
-//                        attendeeDetails.minValue = 0;
-//                        attendeeDetails.minFrequency = 1;
-//                    }
-//                }
-//            }
-//        }
-        return null;
+
+        return createByEntries(entries, entity.getOrganizerId(), team.getOriginKey());
     }
+
+    private List<PreferenceEntity> createByEntries(List<Map.Entry<LocalDate, String>> entries,
+                                                   String organizerId, String teamOriginKey) {
+        List<PreferenceEntity> pList = new ArrayList<>();
+        for (int i = 0; i < 3; i++) {
+            PreferenceEntity p = new PreferenceEntity();
+
+            p.setDtStart(entries.get(i).getKey().atTime(0,0,0));
+            p.setDtEnd(entries.get(i).getKey().atTime(23,59,59));
+
+            p.setStatus("TENTATIVE");
+            p.setOrganizerId(organizerId);
+            p.setTeamOriginKey(teamOriginKey);
+
+            p.setLikes(0);
+            pList.add(p);
+            savePreference(p);
+        }
+        return pList;
+    }
+
+    private void savePreference(PreferenceEntity entity) {
+        preferenceRepository.save(entity);
+    }
+
 
     private static String getUserIdFromIcsFileName(String icsFileName) {
         return icsFileName.substring(0, icsFileName.length() - 4);
@@ -346,6 +286,10 @@ public class PreferenceService {
         return result;
     }
 
+//    // preference 현황 retrieve
+//    public List<PreferenceEntity> retrieve() {
+//        preferenceRepository.findBy
+//    }
 
 
     public Set<DayOfWeek> changeStringToDayOfWeek(List<String> days) {
