@@ -9,12 +9,19 @@ import lombok.NoArgsConstructor;
 import net.fortuna.ical4j.data.CalendarBuilder;
 import net.fortuna.ical4j.data.ParserException;
 import net.fortuna.ical4j.model.*;
+import net.fortuna.ical4j.model.component.VEvent;
+import net.fortuna.ical4j.model.property.*;
 
 import java.io.IOException;
 import java.io.StringReader;
+import java.net.URISyntaxException;
 import java.sql.Timestamp;
+import java.text.ParseException;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
+import java.util.List;
 
 @Builder
 @NoArgsConstructor
@@ -83,18 +90,15 @@ public class CaldavDTO {
 
         return PreferenceEntity.builder()
                 .uid(calendar.getComponent("VEVENT").getProperty(Property.UID).getValue())
-                .summary(calendar.getComponent("VEVENT").getProperty(Property.SUMMARY).getValue())
                 .dtStart(LocalDateTime.parse(calendar.getComponent("VEVENT").getProperty(Property.DTSTART).getValue(), DateTimeFormatter.ofPattern("yyyyMMdd'T'HHmmss'Z'")))
                 .dtEnd(LocalDateTime.parse(calendar.getComponent("VEVENT").getProperty(Property.DTEND).getValue(), DateTimeFormatter.ofPattern("yyyyMMdd'T'HHmmss'Z'")))
-                .location(calendar.getComponent("VEVENT").getProperty(Property.LOCATION).getValue()!=null ?
-                        calendar.getComponent("VEVENT").getProperty(Property.LOCATION).getValue() : "")
 
-                .duration(calendar.getComponent("VEVENT").getProperty(Property.DURATION).getValue())
-                .startScope(calendar.getComponent("VEVENT").getProperty(Property.EXPERIMENTAL_PREFIX + "STARTSCOPE").getValue())
-                .endScope(calendar.getComponent("VEVENT").getProperty(Property.EXPERIMENTAL_PREFIX + "ENDSCOPE").getValue())
+//                .duration(calendar.getComponent("VEVENT").getProperty(Property.DURATION).getValue())
+//                .startScope(calendar.getComponent("VEVENT").getProperty(Property.EXPERIMENTAL_PREFIX + "STARTSCOPE").getValue())
+//                .endScope(calendar.getComponent("VEVENT").getProperty(Property.EXPERIMENTAL_PREFIX + "ENDSCOPE").getValue())
 
                 .status(calendar.getComponent("VEVENT").getProperty(Property.EXPERIMENTAL_PREFIX + "STATUS").getValue())
-                .allDay(calendar.getComponent("VEVENT").getProperty(Property.EXPERIMENTAL_PREFIX + "ALLDAY").getValue())
+//                .allDay(calendar.getComponent("VEVENT").getProperty(Property.EXPERIMENTAL_PREFIX + "ALLDAY").getValue())
                 .build();
     }
 
@@ -108,5 +112,52 @@ public class CaldavDTO {
     }
 
 
+    public static String setValue(List<PreferenceEntity> pList) throws ParseException, URISyntaxException, IOException {
 
+        Calendar calendar = new Calendar();
+
+        for (PreferenceEntity pf : pList) {
+            VEvent vEvent = new VEvent();
+            vEvent.getProperties().add(new Uid(pf.getUid()));
+            vEvent.getProperties().add(new DtStart(new DateTime(Date.from(pf.getDtStart().atZone(ZoneId.systemDefault()).toInstant()))));
+            vEvent.getProperties().add(new DtEnd(new DateTime(Date.from(pf.getDtEnd().atZone(ZoneId.systemDefault()).toInstant()))));
+            vEvent.getProperties().add(new Organizer(pf.getOrganizerId()));
+            vEvent.getProperties().add(new Status(pf.getStatus()));
+            vEvent.getProperties().add(new XProperty(Property.EXPERIMENTAL_PREFIX + "LIKES", String.valueOf(pf.getLikes())));
+            calendar.getComponents().add(vEvent);
+        }
+        return calendar.toString();
+    }
+
+    public static class Precondition {
+        List<String> preferredDays;
+        String startScope;
+        String endScope;
+        String duration;
+
+    public Precondition(List<String> preferredDays, String startScope, String endScope, String duration) {
+        this.preferredDays = preferredDays;
+        this.startScope = startScope;
+        this.endScope = endScope;
+        this.duration = duration;
+    }
+
+    public List<String> getPreferredDays() {
+        return preferredDays;
+    }
+
+    public String getStartScope() {
+        return startScope;
+    }
+
+    public String getEndScope() {
+        return endScope;
+    }
+
+    public String getDuration() {
+        return duration;
+    }
 }
+}
+
+
