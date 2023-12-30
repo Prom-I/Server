@@ -5,6 +5,7 @@ import com.fasterxml.jackson.databind.SerializationFeature;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.core.annotation.Order;
+import org.springframework.http.MediaType;
 import org.springframework.stereotype.Component;
 import org.springframework.web.filter.AbstractRequestLoggingFilter;
 import org.springframework.web.util.ContentCachingRequestWrapper;
@@ -64,12 +65,23 @@ public class LoggingFilter extends AbstractRequestLoggingFilter {
             byte[] responseBytes = responseWrapper.getContentAsByteArray();
             if (responseBytes.length > 0) {
                 String responseBody = new String(responseBytes, StandardCharsets.UTF_8);
+                String contentType = responseWrapper.getContentType(); // contentType을 가져옵니다.
+
                 try {
-                    Object json = mapper.readValue(responseBody, Object.class);
-                    String prettyResponse = mapper.writerWithDefaultPrettyPrinter().writeValueAsString(json);
-                    logger.info("Response Body: {}", prettyResponse);
+                    if (contentType != null && contentType.contains(MediaType.APPLICATION_JSON_VALUE)) {
+                        // JSON 형식 처리
+                        Object json = mapper.readValue(responseBody, Object.class);
+                        String prettyResponse = mapper.writerWithDefaultPrettyPrinter().writeValueAsString(json);
+                        logger.info("Response Body (JSON): {}", prettyResponse);
+                    } else if (contentType != null && contentType.contains("text/calendar")) {
+                        // text/calendar 형식 처리
+                        logger.info("Response Body (Calendar): {}", responseBody);
+                    } else {
+                        // 그 외 형식 처리
+                        logger.info("Response Body (Other): {}", responseBody);
+                    }
                 } catch (Exception e) {
-                    logger.error("Error occurred while trying to format the JSON response: ", e);
+                    logger.error("Error occurred while trying to process the response: ", e);
                     logger.info("Response Body (unformatted): {}", responseBody);
                 }
             }
