@@ -8,7 +8,11 @@ import com.example.tomeettome.Repository.UserRepository;
 import com.example.tomeettome.Repository.VoteRepository;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
+
+import java.util.List;
+import java.util.Optional;
 
 @Slf4j
 @Service
@@ -37,6 +41,12 @@ public class VoteService {
         // preference update
         PreferenceEntity preference = preferenceRepository.findByUid(entity.getPreferenceUid());
         preference.setLikes(preference.getLikes()-1);
+
+        // vote remove
+        Specification<VoteEntity> spec = VoteRepository.findPreferenceByUser(entity.getPreferenceUid(), entity.getUserUid());
+        List<VoteEntity> vote = voteRepository.findAll(spec);
+        voteRepository.delete(vote.get(0));
+
         return preferenceRepository.save(preference);
     }
 
