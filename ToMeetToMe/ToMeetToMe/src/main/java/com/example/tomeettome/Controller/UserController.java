@@ -2,6 +2,7 @@ package com.example.tomeettome.Controller;
 
 import com.example.tomeettome.DTO.*;
 import com.example.tomeettome.DTO.Apple.AuthCodeDTO;
+import com.example.tomeettome.DTO.Apple.AppleKeyDTO;
 import com.example.tomeettome.Model.CalendarEntity;
 import com.example.tomeettome.Model.UserEntity;
 import com.example.tomeettome.Security.TokenProvider;
@@ -22,6 +23,7 @@ import java.io.UnsupportedEncodingException;
 import java.net.URLDecoder;
 import java.nio.charset.StandardCharsets;
 import java.security.GeneralSecurityException;
+import java.text.ParseException;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -51,15 +53,12 @@ public class UserController {
         String idToken = dto.getToken();
         UserEntity user = userService.validateIdTokenGoogle(idToken);
 
-        if (user != null) { // 회원가입 또는 로그인의 경우
-            return (user);
+        try {
+            return signUpOrLogin(user);
         }
-        else { // ID Token이 유효하지 않은 경우
-            ResponseDTO response = ResponseDTO.builder()
-                    .status("fail")
-                    .error("Invaild ID Token")
-                    .build();
-            return ResponseEntity.ok().body(response);
+        catch (Exception e) {
+            log.error("error msg : " + e.getMessage());
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(e.getMessage());
         }
     }
 
@@ -67,6 +66,7 @@ public class UserController {
     @GetMapping("/kakao/callback")
     public ResponseEntity<?> redirectKakaoResponse(@RequestParam String code) throws JSONException {
         // Redirect로 인증코드를 받음
+
         // 받은 인증 코드로 Access Token 요청
         String accessToken = userService.createAuthCodeKakao(code);
         try {
@@ -76,7 +76,7 @@ public class UserController {
             // KaKao API로 유저 정보 얻기
             UserEntity user = userService.getUserInfoKaKao(accessToken);
 
-            return login(user);
+            return signUpOrLogin(user);
         }
         catch (Exception e) {
             log.error("error msg : " + e.getMessage());
@@ -89,12 +89,21 @@ public class UserController {
     // Apple에 인증코드 요청한 결과인 인증코드 결과 (redirect url)
     // application/x-www-form-urlencoded application/json
     // user : name(f,l), email
+    // 회원가입하다가 나가는 경우 error 처리 해야 됨 
     @PostMapping("/apple/callback")
-    public ResponseEntity<?> redirectAppleResponse(AuthCodeDTO dto){
+    public ResponseEntity<?> redirectAppleResponse(@RequestParam("id_token") String idToken,
+                                                   @RequestParam(value="user",
+                                                           required = false, defaultValue="") String userInfo) throws ParseException {
 
-        // id token에서 email을 뽑음
-        String idToken = dto.getAuthorization().getId_token();
-        String email = tokenProvider.validateIdTokenAndGetEmail(idToken);
+        // public key를 발급 받아야 함
+        List<AppleKeyDTO> keys = userService.createPublicKeyApple();
+
+        // Id Token  Valildation
+        String email = tokenProvider.validateIdTokenAndGetUserIdApple(idToken,keys);
+
+
+        log.info("email " + email );
+
         // 사용자의 존재유무 확인
         boolean result = userService.checkUserExists(email);
 
@@ -103,19 +112,13 @@ public class UserController {
                 .build();
 
         if(!result) { // 회원가입
-            if(dto.getUser() != null) { // user의 정보가 딸려오는 회원가입
-                JSONObject jsonObject = new JSONObject(dto.getUser());
-                JSONObject name = (JSONObject) jsonObject.get("name");
-                String firstName = name.getString("firstName");
-                String lastName = name.getString("lastName");
+            JSONObject jsonObject = new JSONObject(userInfo);
+            JSONObject name = (JSONObject) jsonObject.get("name");
+            String firstName = name.getString("firstName");
+            String lastName = name.getString("lastName");
 
-                user.setUserName(lastName+firstName);
-                userService.create(user);
-            }
-            else { // 회원가입인데, user 정보가 딸려오지 않아서 userName 디폴트로 설정하는 부분
-                user.setUserName("default");
-                userService.create(user);
-            }
+            user.setUserName(lastName+firstName);
+            userService.create(user);
         }
 
         return login(user);
@@ -187,6 +190,7 @@ public class UserController {
         String token = tokenProvider.create(user);
         UserDTO userDTO = UserDTO.builder()
                 .userId(user.getUserId())
+                .userName(user.getUserName()!=null ? user.getUserName() : "")
                 .token(token)
                 .build();
         log.info("로그인 후 token 발급완료!" + token);
@@ -194,8 +198,14 @@ public class UserController {
         return ResponseEntity.ok().body(response);
     }
 
-
-
-
-
+    private ResponseEntity<ResponseDTO<UserDTO>> signUpOrLogin(UserEntity user) {
+        // 사용자의 존재유무 확인
+        boolean result = userService.checkUserExists(user.getUserId());
+        if (result) { // 로그인
+            return login(user);
+        }
+        else { // 회원가입
+            return login(userService.create(user));
+        }
+    }
 }

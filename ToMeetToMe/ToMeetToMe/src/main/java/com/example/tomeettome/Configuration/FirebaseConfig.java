@@ -35,8 +35,9 @@ public class FirebaseConfig {
             FirebaseOptions options = FirebaseOptions.builder()
                     .setCredentials(GoogleCredentials.fromStream(refreshToken))
                     .build();
-            firebaseApp = FirebaseApp.initializeApp(options);
+            FirebaseApp.initializeApp(options);
         }
         return  FirebaseMessaging.getInstance(firebaseApp);
     }
 }
+  

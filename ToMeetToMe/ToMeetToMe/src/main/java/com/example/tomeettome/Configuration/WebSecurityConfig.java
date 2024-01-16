@@ -41,6 +41,7 @@ public class WebSecurityConfig extends WebSecurityConfigurerAdapter {
                 //.authenticated()
                 //.and()
                 //.oauth2Login()
+
         ;
 
         http.addFilterAfter(jwtAuthenticationFilter, CorsFilter.class);

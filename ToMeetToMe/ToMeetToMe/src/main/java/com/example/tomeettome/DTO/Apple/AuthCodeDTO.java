@@ -13,7 +13,9 @@ import java.util.Map;
 @Getter
 @Setter
 public class AuthCodeDTO {
-    private AuthorizationDTO authorization;
+    private String code;
+    private String id_token;
+    private String state;
     private String user;
 }
 

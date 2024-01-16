@@ -1,13 +1,16 @@
 package com.example.tomeettome.Service;
 
+import com.example.tomeettome.DTO.Apple.AppleKeyDTO;
 import com.example.tomeettome.Model.UserEntity;
 import com.example.tomeettome.Repository.CalendarPermissionRepository;
 import com.example.tomeettome.Repository.UserRepository;
+import com.example.tomeettome.Security.TokenProvider;
 import com.google.api.client.http.HttpTransport;
 import com.google.api.client.http.javanet.NetHttpTransport;
 import com.google.api.client.json.JsonFactory;
 import com.google.api.client.json.jackson2.JacksonFactory;
 import lombok.extern.slf4j.Slf4j;
+import org.json.JSONArray;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.json.JSONException;
 import org.json.JSONObject;
@@ -18,6 +21,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import java.io.*;
 import java.security.GeneralSecurityException;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
@@ -34,6 +38,7 @@ public class UserService {
 
     @Autowired UserRepository userRepository;
     @Autowired CalendarPermissionRepository calendarPermissionRepository;
+    @Autowired TokenProvider tokenProvider;
 
     public UserEntity validateIdTokenGoogle(String idTokenString) throws GeneralSecurityException, IOException {
 
@@ -73,7 +78,7 @@ public class UserService {
             log.info("Given Name: " + givenName);
 
             UserEntity user = UserEntity.builder()
-                    .userName(name + userRepository.findAll().size())
+                    .userName(name + "#" +userRepository.findAll().size())
                     .userId(email)
                     .platform("Google")
                     .build();
@@ -183,6 +188,86 @@ public class UserService {
                 entity,
                 String.class
         );
+    }
+
+    public String createIdTokenApple(String code) {
+        String result = "";
+        String requestUrl = "https://appleid.apple.com/auth/token";
+
+        //보낼 파라메터 셋팅
+        MultiValueMap<String, String> params = new LinkedMultiValueMap<>();
+        params.add("client_id","com.ToMeetToMe.services");
+        params.add("client_secret", tokenProvider.createClientSecret());
+        params.add("grant_type", "authorization_code");
+        params.add("redirect_uri","https://www.tmtm.site/user/apple/callback");
+        params.add("code", code);
+
+        //헤더셋팅
+        HttpHeaders headers = new HttpHeaders();
+        headers.add("Content-type", "application/x-www-form-urlencoded;charset=utf-8");
+
+        //파라메터와 헤더 합치기
+        HttpEntity<MultiValueMap<String, String>> entity = new HttpEntity<>(params, headers);
+        //RestTemplate 초기화
+        RestTemplate rt = new RestTemplate();
+
+        //전송 및 결과 처리
+        ResponseEntity<String> response = rt.exchange(
+                requestUrl,
+                HttpMethod.POST,
+                entity,
+                String.class
+        );
+
+        result = response.getBody();
+
+        JSONObject jsonObject = new JSONObject(result);
+        String idToken = jsonObject.getString("id_token");
+
+        return idToken;
+    }
+
+    public List<AppleKeyDTO> createPublicKeyApple() {
+        String result = "";
+        String requestUrl = "https://appleid.apple.com/auth/keys";
+        //헤더셋팅
+        HttpHeaders headers = new HttpHeaders();
+
+        //파라메터와 헤더 합치기
+        HttpEntity<MultiValueMap<String, String>> entity = new HttpEntity<>(headers);
+        //RestTemplate 초기화
+        RestTemplate rt = new RestTemplate();
+
+        //전송 및 결과 처리
+        ResponseEntity<String> response = rt.exchange(
+                requestUrl,
+                HttpMethod.GET,
+                entity,
+                String.class
+        );
+
+        result = response.getBody();
+
+        JSONObject jsonObject = new JSONObject(result);
+        JSONArray keys = (JSONArray) jsonObject.get("keys");
+
+        List<AppleKeyDTO> keyList = new ArrayList<>();
+        for (int i = 0; i < keys.length(); i++) {
+
+            JSONObject keyObject = (JSONObject) keys.get(i);
+
+            AppleKeyDTO dto = AppleKeyDTO.builder()
+                    .kty(keyObject.getString("kty"))
+                    .kid(keyObject.getString("kid"))
+                    .use(keyObject.getString("use"))
+                    .alg(keyObject.getString("alg"))
+                    .n(keyObject.getString("n"))
+                    .e(keyObject.getString("e"))
+                    .build();
+
+            keyList.add(dto);
+        }
+        return keyList;
     }
 
     private HttpTransport getHttpTransport() {
