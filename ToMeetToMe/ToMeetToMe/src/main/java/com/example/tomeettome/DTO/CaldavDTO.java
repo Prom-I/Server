@@ -163,6 +163,7 @@ public class CaldavDTO {
             vEvent.getProperties().add(new DtEnd(new DateTime(Date.from(p.getDtEnd().atZone(ZoneId.systemDefault()).toInstant()))));
             vEvent.getProperties().add(new Organizer(p.getOrganizerId()));
             vEvent.getProperties().add(new Status(p.getStatus()));
+
             if (p.getStatus().equals("CONFIRMED")) { // 확정된 약속
                 //참석자랑 불참자 세팅
                 for(String attendee : stringToList(p.getAttendee())){

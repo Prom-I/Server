@@ -3,9 +3,11 @@ package com.example.tomeettome.Controller;
 import com.example.tomeettome.DTO.BlockDTO;
 import com.example.tomeettome.DTO.CaldavDTO;
 import com.example.tomeettome.DTO.CategoryDTO;
+import com.example.tomeettome.DTO.NotificationDTO;
 import com.example.tomeettome.Model.AppointmentBlockEntity;
 import com.example.tomeettome.Model.PreferenceEntity;
 import com.example.tomeettome.Model.PromiseEntity;
+import com.example.tomeettome.Service.NotificationService;
 import com.example.tomeettome.Service.PreferenceService;
 import com.example.tomeettome.Service.PromiseService;
 import lombok.extern.slf4j.Slf4j;
@@ -36,6 +38,7 @@ public class PreferenceController {
 
     @Autowired PreferenceService preferenceService;
     @Autowired PromiseService promiseService;
+    @Autowired NotificationService notificationService;
     /**
      *
      * @param userId Preference의 Organizer
@@ -122,17 +125,35 @@ public class PreferenceController {
     // 약속의 Status를 바꾸고
     // 약속의 Dtstart와 DtEnd를 수정해야 되고
     // 약속의 참여자 수정
-    // Appointment Block 삭제해야 되고
-    // Preference 3개 지우고
-    // Vote도 지우고
-
-    // 또 ?
     @PutMapping("/confirm")
     public ResponseEntity<String> confirmPromise(@RequestBody String component) throws ParserException, IOException, URISyntaxException {
         CaldavDTO dto = new CaldavDTO(component);
         PromiseEntity promise = CaldavDTO.toPromiseEntity(dto);
+
+        boolean result = promiseService.isPromiseConfirmed(promise);
+
         promise = promiseService.confirm(promise);
 
+        NotificationDTO notification = new NotificationDTO();
+
+        if (result) { // 약속 수정
+
+            notification.builder()
+                    .fcmToken()
+                    .body()
+                    .title()
+                    .build();
+        }
+        else { // 약속 최초 확정
+            notification.builder()
+                    .fcmToken()
+                    .body()
+                    .title()
+                    .build();
+        }
+
+
+        notificationService.sendNotificatonByToken(notification);
         return ResponseEntity.ok().body(CaldavDTO.setPromiseValue(Collections.singletonList(promise)));
     }
 

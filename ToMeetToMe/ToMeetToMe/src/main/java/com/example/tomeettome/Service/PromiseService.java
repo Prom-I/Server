@@ -43,6 +43,8 @@ public class PromiseService {
     // 약속의 Location 수정, 약속의 참여자 수정
     public PromiseEntity confirm(PromiseEntity promise){
         Optional<PromiseEntity> entity = promiseRepository.findById(promise.getUid());
+
+
         entity.ifPresent( p -> {
             List<List<String>> attendance = null;
             try {
@@ -83,6 +85,14 @@ public class PromiseService {
         }
 
         return names;
+    }
+
+    public boolean isPromiseConfirmed(PromiseEntity promise) {
+        Optional<PromiseEntity> promiseEntity = promiseRepository.findById(promise.getUid());
+        if (promiseEntity.get().getStatus().equals("TENTATIVE")) {
+            return true;
+        }
+        else return false;
     }
 
 

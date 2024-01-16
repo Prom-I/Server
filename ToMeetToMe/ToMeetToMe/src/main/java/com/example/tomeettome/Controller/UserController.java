@@ -16,6 +16,7 @@ import org.json.JSONException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.security.core.userdetails.User;
 import org.springframework.web.bind.annotation.*;
 
 import java.io.IOException;
@@ -125,32 +126,32 @@ public class UserController {
         // https://appleid.apple.com/auth/authorize?client_id=com.ToMeetToMe.services&redirect_uri=https%3A%2F%2Fwww.tmtm.site%2Fuser%2Fapple%2Fcallback&response_type=code id_token&state=test&scope=name email&nonce=20B20D-0S8-1K8&response_mode=form_post&frame_id=64f53562-9fee-4003-8ca7-12696c2c7cc1&m=12&v=1.5.5
     }
 
-    @PostMapping("/signup")
-    public ResponseEntity<?> create(@RequestBody UserDTO dto) {
-        UserEntity user = dto.toEntity(dto);
-        try {
-            user = userService.create(user);
-            CalendarEntity calendar = calendarService.createUserCalendar(user); // Calendar 생성
-            calendarService.createUserCalendarPermission(user,calendar); // CalendarPermission 생성
-            categoryService.init(calendar); // Default Category 생성
-
-            CalendarDTO calendarDTO = CalendarDTO.builder()
-                    .icsFileName(calendar.getIcsFileName())
-                    .componentType(calendar.getComponentType())
-                    .userId(user.getUserId())
-                    .userName(user.getUserName())
-                    .build();
-            ResponseDTO<CalendarDTO> response = ResponseDTO.<CalendarDTO>builder().data(Collections.singletonList(calendarDTO)).status("success").build();
-            return ResponseEntity.ok().body(response);
-        }
-        catch (Exception e) {
-            ResponseDTO response = ResponseDTO.builder()
-                    .status("fail")
-                    .error("id already exists")
-                    .build();
-            return ResponseEntity.ok().body(response);
-        }
-    }
+//    @PostMapping("/signup")
+//    public ResponseEntity<?> create(@RequestBody UserDTO dto) {
+//        UserEntity user = dto.toEntity(dto);
+//        try {
+//            user = userService.create(user);
+//            CalendarEntity calendar = calendarService.createUserCalendar(user); // Calendar 생성
+//            calendarService.createUserCalendarPermission(user,calendar); // CalendarPermission 생성
+//            categoryService.init(calendar); // Default Category 생성
+//
+//            CalendarDTO calendarDTO = CalendarDTO.builder()
+//                    .icsFileName(calendar.getIcsFileName())
+//                    .componentType(calendar.getComponentType())
+//                    .userId(user.getUserId())
+//                    .userName(user.getUserName())
+//                    .build();
+//            ResponseDTO<CalendarDTO> response = ResponseDTO.<CalendarDTO>builder().data(Collections.singletonList(calendarDTO)).status("success").build();
+//            return ResponseEntity.ok().body(response);
+//        }
+//        catch (Exception e) {
+//            ResponseDTO response = ResponseDTO.builder()
+//                    .status("fail")
+//                    .error("id already exists")
+//                    .build();
+//            return ResponseEntity.ok().body(response);
+//        }
+//    }
 
     @GetMapping("/retrieve/{pattern}")
     public ResponseEntity<?> retrieve(@PathVariable("pattern") String pattern) throws UnsupportedEncodingException {
@@ -198,14 +199,26 @@ public class UserController {
         return ResponseEntity.ok().body(response);
     }
 
-    private ResponseEntity<ResponseDTO<UserDTO>> signUpOrLogin(UserEntity user) {
+    private ResponseEntity<?> signUpOrLogin(UserEntity user) {
         // 사용자의 존재유무 확인
         boolean result = userService.checkUserExists(user.getUserId());
         if (result) { // 로그인
             return login(user);
         }
         else { // 회원가입
-            return login(userService.create(user));
+            try {
+                user = userService.create(user);
+                CalendarEntity calendar = calendarService.createUserCalendar(user); // Calendar 생성
+                calendarService.createUserCalendarPermission(user,calendar); // CalendarPermission 생성
+                categoryService.init(calendar); // Default Category 생성
+
+                return login(user);
+            }
+            catch (Exception e) {
+                log.error("error msg : " + e.getMessage());
+                return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(e.getMessage());
+            }
+
         }
     }
 }
