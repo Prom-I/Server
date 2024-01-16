@@ -16,6 +16,7 @@ import org.springframework.stereotype.Service;
 public class TeamService {
 
     @Autowired TeamRepository teamRepository;
+
     public TeamEntity createTeam(TeamEntity team) {
         return teamRepository.save(team);
     }

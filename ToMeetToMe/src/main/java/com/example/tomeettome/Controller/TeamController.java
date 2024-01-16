@@ -34,7 +34,8 @@ public class TeamController {
      * @return TeamDTO
      */
     @PostMapping("/create")
-    public ResponseEntity<?> create(@AuthenticationPrincipal String userId, @RequestBody TeamDTO dto) {
+    public ResponseEntity<?> create(@AuthenticationPrincipal String userId,
+                                    @RequestBody TeamDTO dto) {
 
         // 팀원이 자기 자신밖에 없거나 아예 안보내주는 경우 400 Bad Request
         if(dto.getTeamUsers().length <= 1) {
