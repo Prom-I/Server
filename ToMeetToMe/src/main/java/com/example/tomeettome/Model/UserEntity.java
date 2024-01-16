@@ -30,12 +30,11 @@ public class UserEntity {
     private String userName;
     private String image;
     private String platform;
+    private String fcmToken;
 
     @UpdateTimestamp
     private LocalDateTime lastModifiedAt;
     @CreationTimestamp
     private LocalDateTime createdAt;
-
-
 }
 
