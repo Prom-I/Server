@@ -17,7 +17,7 @@ import java.time.format.DateTimeFormatter;
 public class ScheduleDTO {
     private String uid;
     private String icsFileName;
-    private String categoryOriginKey;
+    private String categoryUid;
     private String summary;
     private String description;
     private String dtStart;
@@ -29,21 +29,21 @@ public class ScheduleDTO {
     private LocalDateTime lastModifiedAt;
     private LocalDateTime createdAt;
 
-//    public ScheduleDTO(final ScheduleEntity entity) {
-//        this.uid = entity.getUid();
-//        this.icsFileName = entity.getIcsFileName();
-//        this.categoryOriginKey = entity.getCategoryOriginKey();
-//        this.summary = entity.getSummary();
-//        this.description = entity.getDescription();
-//        this.dtStart = entity.getDtStart();
-//        this.dtEnd = entity.getDtEnd();
-//        this.location = entity.getLocation();
-//        this.rRule = entity.getRRule();
-//        this.status = entity.getStatus();
-//        this.allDay = entity.getAllDay();
-//        this.lastModifiedAt = entity.getLastModifiedAt();
-//        this.createdAt = entity.getCreatedAt();
-//    }
+    public ScheduleDTO(final ScheduleEntity entity) {
+        this.uid = entity.getUid();
+        this.icsFileName = entity.getIcsFileName();
+        this.categoryUid = entity.getCategoryUid();
+        this.summary = entity.getSummary();
+        this.description = entity.getDescription();
+        this.dtStart = entity.getDtStart().toString();
+        this.dtEnd = entity.getDtEnd().toString();
+        this.location = entity.getLocation();
+        this.rRule = entity.getRRule();
+        this.status = entity.getStatus();
+        this.allDay = entity.getAllDay();
+        this.lastModifiedAt = entity.getLastModifiedAt();
+        this.createdAt = entity.getCreatedAt();
+    }
 
     // DTO -> Entity 변환
 
@@ -51,7 +51,7 @@ public class ScheduleDTO {
         return ScheduleEntity.builder()
                 .uid(dto.getUid())
                 .icsFileName(dto.getIcsFileName())
-                .categoryOriginKey(dto.getCategoryOriginKey())
+                .categoryUid(dto.getCategoryUid())
                 .summary(dto.getSummary())
                 .description(dto.getSummary())
                 .dtStart(Timestamp.valueOf(LocalDateTime.parse(dto.getDtStart(), DateTimeFormatter.ofPattern("yyyyMMdd'T'HHmmss'Z'"))))

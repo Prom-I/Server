@@ -2,14 +2,13 @@ package com.example.tomeettome.Security;
 
 import com.example.tomeettome.Model.UserEntity;
 import io.jsonwebtoken.Claims;
+import io.jsonwebtoken.Jws;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.SignatureAlgorithm;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.security.core.userdetails.User;
-import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.stereotype.Service;
 
+import java.security.Key;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.Date;
@@ -45,12 +44,37 @@ public class TokenProvider {
                     .getBody();
 
             return claims.get("userId", String.class);
-        }catch (Exception e){
+        }
+        catch (Exception e){
             log.error("Error validating token: {}", e.getMessage());
             return null;
 
         }
     }
 
+<<<<<<< e3f7b12cea76e31cf041f350eb02ab253c212957
+<<<<<<< e3f7b12cea76e31cf041f350eb02ab253c212957
 
+=======
+    public TokenResponseDTO servicesRedirect (AuthCodeDTO dto) {
+        String code = dto.getCode();
+        String client_secret =
+=======
+    public String validateIdTokenAndGetEmail(String idToken) {
+        try {
+            Claims claims = Jwts.parser()
+                    .parseClaimsJws(idToken)
+                    .getBody();
+            if (claims.get("email_verified", String.class).equals("true")) {
+                return claims.get("email", String.class);
+            }
+            else return null;
+        }
+        catch (Exception e) {
+            log.error("Error validating token: {}", e.getMessage());
+            return null;
+        }
+>>>>>>> FEAT/ Apple 소셜로그인 플로우 완료
+    }
+>>>>>>> FEAT/ Apple 소셜 로그인 구현 중
 }

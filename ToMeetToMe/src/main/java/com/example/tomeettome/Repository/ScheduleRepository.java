@@ -28,6 +28,7 @@ import static net.fortuna.ical4j.filter.PredicateFactory.or;
 public interface ScheduleRepository extends JpaRepository<ScheduleEntity, String>, JpaSpecificationExecutor<ScheduleEntity> {
     ScheduleEntity findByUid(String uid);
     List<ScheduleEntity> findByIcsFileName(String icsFileName);
+    List<ScheduleEntity> findByCategoryUid(String categoryUid);
 //    List<ScheduleEntity> findAllByDtStartBetweenAndDtEndBetween(LocalDateTime dtStart, LocalDateTime dtEnd);
     List<ScheduleEntity> findAll(Specification<ScheduleEntity> spec);
 
@@ -45,6 +46,4 @@ public interface ScheduleRepository extends JpaRepository<ScheduleEntity, String
 
 }
 
-    // 약속 시간대 09~21시 duration 2시간
-    // 09-11 10-12 11-13
-    // 일정 08시~10시
+

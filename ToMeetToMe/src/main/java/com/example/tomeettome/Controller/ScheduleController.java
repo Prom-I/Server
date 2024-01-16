@@ -37,6 +37,7 @@ public class ScheduleController {
      * @throws IOException
      * @throws ParseException
      */
+
     @PutMapping("/create/{icsFileName}")
     public ResponseEntity<?> create(@AuthenticationPrincipal String userId,
                                     @PathVariable("icsFileName") String icsFileName,
@@ -49,12 +50,9 @@ public class ScheduleController {
             String categories = dto.getValue(component, Property.CATEGORIES);
             log.info("CATEGORIES : " + categories);
             // 존재하지 않는 카테고리로 스케쥴 생성요청을 보내면 error
-            ScheduleEntity schedule = calendarService.create(entity, userId, categories);
+            calendarService.create(entity, userId, categories);
 
-            ScheduleDTO scheduleDTO = ScheduleDTO.builder().uid(schedule.getUid()).build();
-            ResponseDTO response = ResponseDTO.<ScheduleDTO>builder().data(Collections.singletonList(scheduleDTO)).status("success").build();
-
-            return ResponseEntity.status(HttpStatus.CREATED).body(response);
+            return ResponseEntity.status(HttpStatus.CREATED).body(null);
         } catch (NullPointerException e) {
             return ResponseEntity.badRequest().body(e.getMessage());
         }
@@ -67,19 +65,18 @@ public class ScheduleController {
             CaldavDTO dto = new CaldavDTO(calendarString);
             ScheduleEntity entity = dto.toScheduleEntity(dto);
 
-            entity.setCategoryOriginKey(categoryService.findOriginKeyByName(dto.getValue(calendarString, "CATEGORIES")));
+            entity.setCategoryUid(categoryService.findIcsFileNameByName(dto.getValue(calendarString, "CATEGORIES")));
             calendarService.update(entity);
 
             return ResponseEntity.status(HttpStatus.NO_CONTENT).body(null);
         } catch (NullPointerException e) {
             return ResponseEntity.badRequest().body(null);
         }
-
     }
 
-    @PutMapping("/delete/{icsFileName}/{uid}")
+    @PutMapping("/delete/{icsFileName}/{scheduleUid}")
     public ResponseEntity<?> delete(@PathVariable("icsFileName") String icsFileName,
-                                    @PathVariable("uid") String uid) {
+                                    @PathVariable("scheduleUid") String uid) {
         try {
             ScheduleEntity entity = calendarService.delete(uid);
 
@@ -93,4 +90,12 @@ public class ScheduleController {
             return ResponseEntity.badRequest().body(response);
         }
     }
+
+    @PatchMapping("/confirm/{icsFileName}/{scheduleUid}")
+    public ResponseEntity<?> confirm(@PathVariable("icsFileName") String icsFileName,
+                                      @PathVariable("scheduleUid") String uid) {
+        calendarService.confirm(uid);
+        return ResponseEntity.status(HttpStatus.NO_CONTENT).body(null);
+    }
+
 }

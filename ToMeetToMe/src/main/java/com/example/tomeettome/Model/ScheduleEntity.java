@@ -14,7 +14,6 @@ import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.GenericGenerator;
 import org.hibernate.annotations.UpdateTimestamp;
 
-import java.sql.Time;
 import java.sql.Timestamp;
 import java.time.LocalDateTime;
 
@@ -31,7 +30,7 @@ public class ScheduleEntity {
     @GenericGenerator(name="system-uuid", strategy="uuid")
     private String uid;
     private String icsFileName;
-    private String categoryOriginKey;
+    private String categoryUid;
     private String summary; // 일정의 제목
     private String description; // 일정의 상세설명
     private Timestamp dtStart; //시작 시간

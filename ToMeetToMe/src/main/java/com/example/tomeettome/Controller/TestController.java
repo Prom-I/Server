@@ -27,6 +27,8 @@ import java.util.Collections;
 public class TestController {
 
     @Autowired TokenProvider tokenProvider;
+
+
     @GetMapping
     public void oAuthTest() {
         log.info("test 입장!!!!!!!!");
