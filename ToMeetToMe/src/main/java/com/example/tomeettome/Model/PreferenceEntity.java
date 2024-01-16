@@ -27,16 +27,19 @@ public class PreferenceEntity {
     @GeneratedValue(generator="system-uuid")
     @GenericGenerator(name="system-uuid", strategy="uuid")
     private String uid;
-    private String teamOriginKey;
-    private String organizerId; // 약속을 만든 사람, 약속을 수정하고 확정할 수 있는 권한자
 
-    private LocalDateTime dtStart;
+//    // 이 3개는 Promise 테이블로 옮김
+//    private String teamOriginKey;
+//    private String organizerId;
+//    private String status;
+
+    private String promiseUid;
+
+    private LocalDateTime dtStart; // 날짜지만 시간을 00시-2359로 표기
     private LocalDateTime dtEnd;
 
     private int likes; // 좋아요 누른 사람 수
-
-    private String status;
-
+    private String location;
     @UpdateTimestamp
     private LocalDateTime lastModifiedAt;
 

@@ -7,10 +7,6 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
-import java.time.LocalDate;
-import java.time.LocalDateTime;
-import java.time.LocalTime;
-import java.time.format.DateTimeFormatter;
 import java.util.List;
 import java.util.Optional;
 
@@ -73,7 +69,7 @@ public class CalendarService {
     public ScheduleEntity create(ScheduleEntity schedule, String userId, String categories) {
 
         CategoryEntity categoryEntity = categoryRepository.findByName(categories);
-        schedule.setCategoryOriginKey(categoryEntity.getOriginKey());
+        schedule.setCategoryUid(categoryEntity.getUid());
 
         List<CalendarPermissionEntity> calendarPermissionEntities = calendarPermissionRepository.findByUserId(userId);
 
@@ -123,7 +119,7 @@ public class CalendarService {
             throw new NullPointerException();
 
         original.ifPresent(schedule ->{
-            schedule.setCategoryOriginKey(entity.getCategoryOriginKey()!=null ? entity.getCategoryOriginKey() : schedule.getCategoryOriginKey());
+            schedule.setCategoryUid(entity.getCategoryUid()!=null ? entity.getCategoryUid() : schedule.getCategoryUid());
             schedule.setSummary(entity.getSummary()!= null ? entity.getSummary() : schedule.getSummary());
             schedule.setDescription(entity.getDescription() != null ? entity.getDescription() : schedule.getDescription());
             schedule.setDtStart(entity.getDtStart() != null ? entity.getDtStart() : schedule.getDtStart());
@@ -141,6 +137,18 @@ public class CalendarService {
         ScheduleEntity entity = scheduleRepository.findByUid(uid);
         scheduleRepository.delete(entity);
         return entity;
+    }
+
+    // Status Toggle
+    public ScheduleEntity confirm(String uid) {
+        ScheduleEntity entity = scheduleRepository.findByUid(uid);
+        if (entity.getStatus().equals("TENTATIVE")) {
+            entity.setStatus("CONFIRMED");
+        }
+        else if (entity.getStatus().equals("CONFIRMED")) {
+            entity.setStatus("TENTATIVE");
+        }
+        return scheduleRepository.findByUid(entity.getUid());
     }
 
 }

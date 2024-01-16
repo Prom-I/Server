@@ -1,15 +1,13 @@
 package com.example.tomeettome.Service;
 
 import com.example.tomeettome.DTO.CaldavDTO;
-import com.example.tomeettome.Model.CalendarPermissionEntity;
-import com.example.tomeettome.Model.PreferenceEntity;
-import com.example.tomeettome.Model.ScheduleEntity;
-import com.example.tomeettome.Model.TeamEntity;
-import com.example.tomeettome.Repository.CalendarPermissionRepository;
-import com.example.tomeettome.Repository.PreferenceRepository;
-import com.example.tomeettome.Repository.ScheduleRepository;
-import com.example.tomeettome.Repository.TeamRepository;
+import com.example.tomeettome.Model.*;
+import com.example.tomeettome.Repository.*;
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.extern.slf4j.Slf4j;
+import net.fortuna.ical4j.model.property.Attendee;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
@@ -24,21 +22,74 @@ import java.time.temporal.ChronoUnit;
 import java.util.*;
 import java.util.AbstractMap.SimpleEntry;
 
-
 @Slf4j
 @Service
-public class PreferenceService {
-    @Autowired
-    private PreferenceRepository preferenceRepository;
 
+
+public class PreferenceService {
+    @Autowired PreferenceRepository preferenceRepository;
     @Autowired CalendarService calendarService;
     @Autowired TeamRepository teamRepository;
     @Autowired CalendarPermissionRepository calendarPermissionRepository;
     @Autowired ScheduleRepository scheduleRepository;
+    @Autowired AppointmentBlockRepository appointmentBlockRepository;
+    @Autowired UserRepository userRepository;
 
     final long oneHourInMillis = 60 * 60 * 1000;
 
-    public List<PreferenceEntity> create(PreferenceEntity entity, String icsFileName, CaldavDTO.Precondition precondition) {
+    // 참석자와 불참석자의 각 List를 담은 class
+
+    class UserInfo{
+        String uid;
+        String name;
+
+        public UserInfo(String uid, String name) {
+            this.uid = uid;
+            this.name = name;
+        }
+
+        public String getUid() {
+            return uid;
+        }
+
+        public String getName() {
+            return name;
+        }
+
+        @Override
+        public boolean equals(Object o) {
+            if (this == o) return true;
+            if (o == null || getClass() != o.getClass()) return false;
+            UserInfo userInfo = (UserInfo) o;
+            return Objects.equals(uid, userInfo.uid) &&
+                    Objects.equals(name, userInfo.name);
+        }
+
+        @Override
+        public int hashCode() {
+            return Objects.hash(uid, name);
+        }
+    }
+
+    class AttendanceRecord {
+        List<UserInfo> attendees;
+        List<UserInfo> absentees;
+
+        public AttendanceRecord(List<UserInfo> attendees) {
+            this.attendees = attendees;
+            this.absentees = new ArrayList<>();
+        }
+
+        public List<UserInfo> getAttendees() {
+            return attendees;
+        }
+
+        public List<UserInfo> getAbsentees() {
+            return absentees;
+        }
+    }
+
+    public List<PreferenceEntity> create(PreferenceEntity entity, String icsFileName, CaldavDTO.Precondition precondition) throws JsonProcessingException {
         long beforeTime = System.currentTimeMillis(); //코드 실행 전에 시간 받아오기
 
         // 조건 설정 (소요 시간, 기간대, 시간대, 선호 요일)
@@ -114,16 +165,13 @@ public class PreferenceService {
         schedules.addAll(findSchedulesWithPreferences(preferredDateTimes, userIdList, duration));
 
         System.out.println("dd");
-        // 참석자와 불참석자의 각 List를 담은 class
-        class AttendanceRecord {
-            List<String> attendee;
-            List<String> absentee;
 
-            public AttendanceRecord(List<String> attendee) {
-                this.attendee = attendee;
-                this.absentee = new ArrayList<>();
-            }
+        // 참고용 USERDICTIONARY 생성
+        final HashMap<String,String> USERDICTIONARY = new HashMap<>();
+        for (String uid : userIdList) {
+            USERDICTIONARY.put(uid, userRepository.findByUserId(uid).getUserName());
         }
+
 
 //        // 각 Indexing Block, Timestamp 별로 참석자와 불참석자 List를 가짐
 //        class AppointmentBlock {
@@ -140,11 +188,12 @@ public class PreferenceService {
         for (int k = 0; k < datesWithSpecificDays.size(); k++) {
             Timestamp startTime = new Timestamp(preferredDateTimes.get(k * 2).getTime());
             for (int i = 0; i < timeRange; i++) {
-                List<String> uiList = new ArrayList<>();
-                for (String user : userIdList) {
-                    uiList.add(user);
+                //call by Reference 때메 생성해서 Appointment Block에 세팅함
+                List<UserInfo> attendees = new ArrayList<>();
+                for(String userId : userIdList){
+                    attendees.add(new UserInfo(userId, USERDICTIONARY.get(userId)));
                 }
-                AttendanceRecord attendanceRecord = new AttendanceRecord(uiList);
+                AttendanceRecord attendanceRecord = new AttendanceRecord(attendees);
                 appointmentBlock.put(new Timestamp(startTime.getTime()), attendanceRecord);
                 startTime.setTime(startTime.getTime() + oneHourInMillis);
             }
@@ -167,18 +216,23 @@ public class PreferenceService {
         for (Timestamp timestamp : appointmentBlock.keySet()) {
             for (ScheduleEntity schedule : schedules) {
                 if (isTimestampRangeContained(schedule.getDtStart(), schedule.getDtEnd(), timestamp, new Timestamp(timestamp.getTime() + (oneHourInMillis * duration)))) {
-                    if(appointmentBlock.get(timestamp).attendee.remove(getUserIdFromIcsFileName(schedule.getIcsFileName()))) {
-                        int prev = appointmentBlock.get(timestamp).attendee.size() + 1;
+                    if(appointmentBlock.get(timestamp).attendees.remove(
+                            new UserInfo(getUserIdFromIcsFileName(schedule.getIcsFileName()),
+                                    USERDICTIONARY.get(getUserIdFromIcsFileName(schedule.getIcsFileName()))))) {
+                        int prev = appointmentBlock.get(timestamp).attendees.size() + 1;
                         int next = prev - 1;
-                        appointmentBlock.get(timestamp).absentee.add(getUserIdFromIcsFileName(schedule.getIcsFileName()));
-                        //appointmentBlock.get(timestamp).attendee.remove(schedule.getIcsFileName());
-                        //appointmentBlock.get(timestamp).absentee.add(schedule.getIcsFileName());
+                        appointmentBlock.get(timestamp).absentees.add(
+                                new UserInfo(getUserIdFromIcsFileName(schedule.getIcsFileName()),
+                                        USERDICTIONARY.get(getUserIdFromIcsFileName(schedule.getIcsFileName()))));
                         dateStatistics.get(timestamp.toLocalDateTime().toLocalDate()).put(prev, dateStatistics.get(timestamp.toLocalDateTime().toLocalDate()).get(prev)-1);
                         dateStatistics.get(timestamp.toLocalDateTime().toLocalDate()).put(next, dateStatistics.get(timestamp.toLocalDateTime().toLocalDate()).get(next)+1);
                     }
                 }
             }
         }
+
+        // DB에 Appointmetn Block 저장하기
+        saveAppointmentBlock(appointmentBlock, precondition.getPromiseUid());
 
         // 날짜별 appointment block 세팅 완료
         // score 변수 init
@@ -204,15 +258,14 @@ public class PreferenceService {
         System.out.println("entries.get(2) = " + entries.get(2));
 
         long afterTime = System.currentTimeMillis(); // 코드 실행 후에 시간 받아오기
-        long secDiffTime = (afterTime - beforeTime); //두 시간에 차 계산
-        System.out.println("시간차이(m) : "+secDiffTime);
+        long secDiffTime = (afterTime - beforeTime); // 두 시간의 차 계산
+        System.out.println("시간차이(m) : " + secDiffTime);
         System.out.println("GG");
 
-        return createByEntries(entries, entity.getOrganizerId(), team.getOriginKey());
+        return createByEntries(entries, precondition.getPromiseUid());
     }
 
-    private List<PreferenceEntity> createByEntries(List<Map.Entry<LocalDate, String>> entries,
-                                                   String organizerId, String teamOriginKey) {
+    private List<PreferenceEntity> createByEntries(List<Map.Entry<LocalDate, String>> entries, String promiseUid) {
         List<PreferenceEntity> pList = new ArrayList<>();
         for (int i = 0; i < 3; i++) {
             PreferenceEntity p = new PreferenceEntity();
@@ -220,21 +273,36 @@ public class PreferenceService {
             p.setDtStart(entries.get(i).getKey().atTime(0,0,0));
             p.setDtEnd(entries.get(i).getKey().atTime(23,59,59));
 
-            p.setStatus("TENTATIVE");
-            p.setOrganizerId(organizerId);
-            p.setTeamOriginKey(teamOriginKey);
-
             p.setLikes(0);
+            p.setPromiseUid(promiseUid);
             pList.add(p);
             savePreference(p);
         }
         return pList;
     }
 
+    public List<PreferenceEntity> retrieve(String promiseUid) {
+        return preferenceRepository.findByPromiseUid(promiseUid);
+    }
+
     private void savePreference(PreferenceEntity entity) {
         preferenceRepository.save(entity);
     }
 
+    private void saveAppointmentBlock(HashMap<Timestamp, AttendanceRecord> ab, String promiseUid) throws JsonProcessingException {
+        for (Timestamp time : ab.keySet()) {
+            ObjectMapper objectMapper = new ObjectMapper();
+            // {"uid" : "" , "username" : ""} , ,,,,
+            AppointmentBlockEntity entity = AppointmentBlockEntity.builder()
+                    .promiseUid(promiseUid)
+                    .timestamp(time)
+                    .attendee(objectMapper.writeValueAsString(ab.get(time).getAttendees()))
+                    .absentee(objectMapper.writeValueAsString(ab.get(time).getAbsentees()))
+                    .rate(calculateRate(ab.get(time).getAttendees().size(), ab.get(time).getAbsentees().size()))
+                    .build();
+            appointmentBlockRepository.save(entity);
+        }
+    }
 
     private static String getUserIdFromIcsFileName(String icsFileName) {
         return icsFileName.substring(0, icsFileName.length() - 4);
@@ -286,25 +354,6 @@ public class PreferenceService {
         return result;
     }
 
-//    // preference 현황 retrieve
-//    public List<PreferenceEntity> retrieve() {
-//        preferenceRepository.findBy
-//    }
-
-
-    public Set<DayOfWeek> changeStringToDayOfWeek(List<String> days) {
-        // 변환할 Set 초기화
-        Set<DayOfWeek> dayOfWeekSet = new HashSet<>();
-
-        // 문자열을 DayOfWeek로 변환하여 Set에 추가
-        for (String day : days) {
-            int dayNumber = Integer.parseInt(day);
-            DayOfWeek dayOfWeek = DayOfWeek.of(dayNumber);
-            dayOfWeekSet.add(dayOfWeek);
-        }
-        return dayOfWeekSet;
-    }
-
     private static List<LocalDate> getDatesWithSpecificDays(LocalDate startDate, Set<Integer> daysToInclude, int range) {
         List<LocalDate> dates = new ArrayList<>();
 
@@ -330,4 +379,18 @@ public class PreferenceService {
         return Timestamp.valueOf(dateTime);
     }
 
+    private int calculateRate(int attend, int absent) {
+        // 100 / 99 ~ 80 / 79 ~ 60 / 59 ~ 40 / 39 ~ 20 / 19 ~ 0
+        // 100 80 60 40 20 0
+
+        if (absent == 0) return 100;
+        if (attend == 0) return 0;
+
+        // 참석 비율 계산
+        double rate = (double) attend / (attend + absent) * 100;
+
+        // 비율에 따른 단계별 값 반환
+        if (rate >= 80) { return 80; } else if (rate >= 60) { return 60; } else if (rate >= 40) { return 40; }
+        else { return 20; }
+    }
 }
