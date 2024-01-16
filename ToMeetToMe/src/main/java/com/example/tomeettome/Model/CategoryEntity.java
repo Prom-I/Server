@@ -24,8 +24,8 @@ public class CategoryEntity {
     @Id
     @GeneratedValue(generator="system-uuid")
     @GenericGenerator(name="system-uuid", strategy="uuid")
-    private String originKey;
-    private String calendarOriginKey;
+    private String uid;
+    private String icsFileName;
     private String name;
     private String color;
     private String scope;
