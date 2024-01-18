@@ -2,7 +2,6 @@ package com.example.tomeettome.Controller;
 
 import com.example.tomeettome.DTO.BlockDTO;
 import com.example.tomeettome.DTO.CaldavDTO;
-import com.example.tomeettome.DTO.CategoryDTO;
 import com.example.tomeettome.DTO.NotificationDTO;
 import com.example.tomeettome.Model.AppointmentBlockEntity;
 import com.example.tomeettome.Model.PreferenceEntity;
@@ -14,7 +13,6 @@ import lombok.extern.slf4j.Slf4j;
 import net.fortuna.ical4j.data.ParserException;
 import net.fortuna.ical4j.model.Property;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.cglib.core.Block;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
@@ -23,7 +21,6 @@ import org.springframework.http.MediaType;
 
 import java.io.IOException;
 import java.net.URISyntaxException;
-import java.sql.Timestamp;
 import java.text.ParseException;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
@@ -153,7 +150,7 @@ public class PreferenceController {
         }
 
 
-        notificationService.sendNotificatonByToken(notification);
+        notificationService.makeMessageByToken(notification);
         return ResponseEntity.ok().body(CaldavDTO.setPromiseValue(Collections.singletonList(promise)));
     }
 

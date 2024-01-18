@@ -8,7 +8,9 @@ import com.example.tomeettome.Model.UserEntity;
 import com.example.tomeettome.Security.TokenProvider;
 import com.example.tomeettome.Service.CalendarService;
 import com.example.tomeettome.Service.CategoryService;
+import com.example.tomeettome.Service.NotificationService;
 import com.example.tomeettome.Service.UserService;
+import com.google.firebase.messaging.Message;
 import lombok.extern.slf4j.Slf4j;
 import org.json.JSONObject;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -37,6 +39,7 @@ public class UserController {
     @Autowired private CalendarService calendarService;
     @Autowired private TokenProvider tokenProvider;
     @Autowired private CategoryService categoryService;
+    @Autowired private NotificationService notificationService;
 
     // FCM token 저장하는 API
         @PostMapping("/auth/fcm/token")
@@ -183,6 +186,22 @@ public class UserController {
                 .build();
         ResponseDTO<UserDTO> response = ResponseDTO.<UserDTO>builder().data(Collections.singletonList(userDTO)).status("success").build();
         return ResponseEntity.ok().body(response);
+    }
+
+    // 친구 추가 요청 API
+    // 수락해주기 전까지는 follower가 갖고 있는 following의 permission이 'read-only'
+    @PostMapping("/follow/{followingId}")
+    public ResponseEntity<?> followRequest(@AuthenticationPrincipal String userId,
+                                    @PathVariable("followingId") String followingId) {
+        try {
+            userService.sendFollowRequest(userId, followingId);
+            Message message = notificationService.makeMessageByToken(notificationService.makefollowNotiDTO(userId, followingId));
+            notificationService.sendNotificaton(message);
+            return ResponseEntity.ok().body(null);
+        }
+        catch (Exception e) {
+            return ResponseEntity.badRequest().body(null);
+        }
     }
 
     // User를 주면 

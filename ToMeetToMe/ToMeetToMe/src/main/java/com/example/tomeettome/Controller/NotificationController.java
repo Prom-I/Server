@@ -22,7 +22,7 @@ public class NotificationController {
     @PostMapping
     public ResponseEntity<?> sendNotificationByToken(@RequestBody NotificationDTO dto) {
         log.info("controller enter");
-        String result = notificationService.sendNotificatonByToken(dto);
+        String result = notificationService.makeMessageByToken(dto);
         return ResponseEntity.ok().body(result);
     }
 
