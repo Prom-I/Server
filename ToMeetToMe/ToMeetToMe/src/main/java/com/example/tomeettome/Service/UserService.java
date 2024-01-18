@@ -1,6 +1,7 @@
 package com.example.tomeettome.Service;
 
 import com.example.tomeettome.DTO.Apple.AppleKeyDTO;
+import com.example.tomeettome.Model.CalendarPermissionEntity;
 import com.example.tomeettome.Model.UserEntity;
 import com.example.tomeettome.Repository.CalendarPermissionRepository;
 import com.example.tomeettome.Repository.UserRepository;
@@ -322,5 +323,30 @@ public class UserService {
         user.setFcmToken(token);
         userRepository.save(user);
         return true;
+    }
+
+    // follower가 following을 친구 추가 요청 보냄
+    // 수락 요청을 받기 전까지는 permission level "read-only"
+    public void sendFollowRequest(String followerId, String followingId) {
+        UserEntity follower = userRepository.findByUserId(followerId);
+        UserEntity following = userRepository.findByUserId(followingId);
+
+        if(follower != null && following != null) {
+            CalendarPermissionEntity calendarPermission = CalendarPermissionEntity.builder()
+                    .ownerType("user")
+                    .ownerOriginKey(following.getUid())
+                    .userId(follower.getUserId())
+                    .permissionLevel("read-only")
+                    .icsFileName(following.getUserId() + ".ics")
+                    .build();
+            calendarPermissionRepository.save(calendarPermission);
+        }
+        else {
+            log.error("user not exist");
+        }
+    }
+
+    public String findFcmTokenByUserId(String userId) {
+        return userRepository.findByUserId(userId).getFcmToken();
     }
 }
