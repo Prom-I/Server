@@ -8,7 +8,6 @@ import com.google.firebase.messaging.FirebaseMessagingException;
 import com.google.firebase.messaging.Message;
 import com.google.firebase.messaging.Notification;
 import lombok.extern.slf4j.Slf4j;
-import org.checkerframework.checker.units.qual.A;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
@@ -21,7 +20,20 @@ public class NotificationService {
     @Autowired private FirebaseMessaging firebaseMessaging;
     @Autowired UserRepository userRepository;
 
-    public String sendNotificatonByToken(NotificationDTO dto) {
+    public NotificationDTO makefollowNotiDTO(String followerId, String followingId) {
+        UserEntity follower = userRepository.findByUserId(followerId);
+        UserEntity following = userRepository.findByUserId(followingId);
+        if(follower != null && following != null) {
+            return NotificationDTO.builder()
+                    .fcmToken(following.getFcmToken())
+                    .title("친구 추가 요청")
+                    .body(follower.getUserName() + " 님이 친구가 되고 싶어합니다")
+                    .build();
+        }
+        else return null;
+    }
+
+    public Message makeMessageByToken(NotificationDTO dto) {
         UserEntity user = userRepository.findByFcmToken(dto.getFcmToken());
 
         if (user != null) {
@@ -36,23 +48,25 @@ public class NotificationService {
                         .setNotification(notification)
                         .build();
 
-                try {
-//                    FirebaseMessaging.getInstance().send(message);
-
-                    firebaseMessaging.send(message);
-                    return "Notification Send Success" + dto.getFcmToken();
-                }
-                catch (FirebaseMessagingException e) {
-                    e.printStackTrace();
-                    return "Notificaton Send Fail" + dto.getFcmToken();
-                }
+                return message;
             }
             else {
-                return "Not Exist This User's FCM Token" + dto.getFcmToken();
+                log.error("Not Exist This User's FCM Token" + dto.getFcmToken());
+                return null;
             }
         }
         else {
-            return "Not Exist This User" + dto.getFcmToken();
+            log.error("Not Exist This User" + dto.getFcmToken());
+            return null;
+        }
+    }
+
+    public void sendNotificaton(Message message) {
+        try {
+            firebaseMessaging.send(message);
+        }
+        catch (FirebaseMessagingException e) {
+            e.printStackTrace();
         }
     }
 
@@ -66,4 +80,6 @@ public class NotificationService {
             e.printStackTrace();
         }
     }
+
+
 }
