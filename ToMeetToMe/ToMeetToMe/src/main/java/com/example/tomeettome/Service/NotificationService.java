@@ -27,7 +27,20 @@ public class NotificationService {
             return NotificationDTO.builder()
                     .fcmToken(following.getFcmToken())
                     .title("친구 추가 요청")
-                    .body(follower.getUserName() + " 님이 친구가 되고 싶어합니다")
+                    .body(follower.getUserName() + " 님이 친구가 되고 싶어합니다.")
+                    .build();
+        }
+        else return null;
+    }
+
+    public NotificationDTO makeAcceptFollowNotiDTO(String followerId, String followingId) {
+        UserEntity follower = userRepository.findByUserId(followerId);
+        UserEntity following = userRepository.findByUserId(followingId);
+        if(follower != null && following != null) {
+            return NotificationDTO.builder()
+                    .fcmToken(follower.getFcmToken())
+                    .title("친구 요청 수락")
+                    .body(following.getUserName() + " 님과 친구과 되었습니다.")
                     .build();
         }
         else return null;

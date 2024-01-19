@@ -133,21 +133,21 @@ public class PreferenceController {
 
         NotificationDTO notification = new NotificationDTO();
 
-        if (result) { // 약속 수정
-
-            notification.builder()
-                    .fcmToken()
-                    .body()
-                    .title()
-                    .build();
-        }
-        else { // 약속 최초 확정
-            notification.builder()
-                    .fcmToken()
-                    .body()
-                    .title()
-                    .build();
-        }
+//        if (result) { // 약속 수정
+//
+//            notification.builder()
+//                    .fcmToken()
+//                    .body()
+//                    .title()
+//                    .build();
+//        }
+//        else { // 약속 최초 확정
+//            notification.builder()
+//                    .fcmToken()
+//                    .body()
+//                    .title()
+//                    .build();
+//        }
 
 
         notificationService.makeMessageByToken(notification);

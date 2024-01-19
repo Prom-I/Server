@@ -1,7 +1,6 @@
 package com.example.tomeettome.Controller;
 
 import com.example.tomeettome.DTO.*;
-import com.example.tomeettome.DTO.Apple.AuthCodeDTO;
 import com.example.tomeettome.DTO.Apple.AppleKeyDTO;
 import com.example.tomeettome.Model.CalendarEntity;
 import com.example.tomeettome.Model.UserEntity;
@@ -18,7 +17,6 @@ import org.json.JSONException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
-import org.springframework.security.core.userdetails.User;
 import org.springframework.web.bind.annotation.*;
 
 import java.io.IOException;
@@ -189,19 +187,36 @@ public class UserController {
     }
 
     // 친구 추가 요청 API
-    // 수락해주기 전까지는 follower가 갖고 있는 following의 permission이 'read-only'
-    @PostMapping("/follow/{followingId}")
+    // 수락해주기 전까지는 follower가 갖고 있는 following의 permission이 'guest'
+    @GetMapping("/follow/{followingId}")
     public ResponseEntity<?> followRequest(@AuthenticationPrincipal String userId,
                                     @PathVariable("followingId") String followingId) {
         try {
-            userService.sendFollowRequest(userId, followingId);
+            userService.followRequest(userId, followingId);
             Message message = notificationService.makeMessageByToken(notificationService.makefollowNotiDTO(userId, followingId));
             notificationService.sendNotificaton(message);
             return ResponseEntity.ok().body(null);
         }
         catch (Exception e) {
-            return ResponseEntity.badRequest().body(null);
+            return ResponseEntity.badRequest().body(e);
         }
+    }
+
+    // 친구 추가 수락 API
+    // 친구 추가 요청을 보낸 사람의 id를 Parameter로 받음
+    @GetMapping("/follow/accept/{followerId}")
+    public ResponseEntity<?> acceptFollowRequest(@AuthenticationPrincipal String userId,
+                                                 @PathVariable("followerId") String followerId) {
+        try {
+            userService.acceptFollowRequest(followerId, "yourUserId2");
+            Message message = notificationService.makeMessageByToken(notificationService.makeAcceptFollowNotiDTO(followerId, userId));
+            notificationService.sendNotificaton(message);
+            return ResponseEntity.ok().body(null);
+        }
+        catch (Exception e) {
+            return ResponseEntity.badRequest().body(e);
+        }
+
     }
 
     // User를 주면 

@@ -15,6 +15,7 @@ import org.json.JSONArray;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.json.JSONException;
 import org.json.JSONObject;
+import org.springframework.data.jpa.domain.Specification;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpMethod;
@@ -326,8 +327,8 @@ public class UserService {
     }
 
     // follower가 following을 친구 추가 요청 보냄
-    // 수락 요청을 받기 전까지는 permission level "read-only"
-    public void sendFollowRequest(String followerId, String followingId) {
+    // 수락 요청을 받기 전까지는 permission level "guest"
+    public void followRequest(String followerId, String followingId) {
         UserEntity follower = userRepository.findByUserId(followerId);
         UserEntity following = userRepository.findByUserId(followingId);
 
@@ -336,9 +337,25 @@ public class UserService {
                     .ownerType("user")
                     .ownerOriginKey(following.getUid())
                     .userId(follower.getUserId())
-                    .permissionLevel("read-only")
+                    .permissionLevel("guest")
                     .icsFileName(following.getUserId() + ".ics")
                     .build();
+            calendarPermissionRepository.save(calendarPermission);
+        }
+        else {
+            log.error("user not exist");
+        }
+    }
+
+    public void acceptFollowRequest(String followerId, String followingId) {
+        UserEntity follower = userRepository.findByUserId(followerId);
+        UserEntity following = userRepository.findByUserId(followingId);
+
+        if(follower != null && following != null) {
+            // Specification
+            Specification<CalendarPermissionEntity> spec = CalendarPermissionRepository.findCalendarPermission(following.getUid(), follower.getUserId());
+            CalendarPermissionEntity calendarPermission = calendarPermissionRepository.findOne(spec);
+            calendarPermission.setPermissionLevel("member");
             calendarPermissionRepository.save(calendarPermission);
         }
         else {
