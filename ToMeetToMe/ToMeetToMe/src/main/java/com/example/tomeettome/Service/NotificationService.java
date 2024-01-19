@@ -40,7 +40,7 @@ public class NotificationService {
             return NotificationDTO.builder()
                     .fcmToken(follower.getFcmToken())
                     .title("친구 요청 수락")
-                    .body(following.getUserName() + " 님과 친구과 되었습니다.")
+                    .body(following.getUserName() + " 님과 친구가 되었습니다.")
                     .build();
         }
         else return null;
