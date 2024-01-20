@@ -87,7 +87,6 @@ public class CalendarService {
 
     public List<ScheduleEntity> retrieveOnlyUser(String userId) {
         List<CalendarPermissionEntity> calendarPermissionEntities = calendarPermissionRepository.findByUserId(userId);
-
         CalendarPermissionEntity permission = new CalendarPermissionEntity();
 
         // CalendarPermission 중에 user 개인의 Calendar를 찾기 위해
@@ -96,13 +95,23 @@ public class CalendarService {
                 permission = p;
             }
         }
-
         // user 개인의 Calendar를 찾음
         CalendarEntity calendar = calendarRepository.findByIcsFileName(permission.getIcsFileName());
-
         // schedule List
         return scheduleRepository.findByIcsFileName(calendar.getIcsFileName());
+    }
 
+    // 개인 일정 + 팀 약속
+    public List<ScheduleEntity> retrieve(String userId) {
+        List<CalendarPermissionEntity> calendarPermissionEntities = calendarPermissionRepository.findByUserId(userId);
+
+        for (CalendarPermissionEntity p : calendarPermissionEntities) {
+            if (p.getOwnerType().equals("user")) {
+                scheduleRepository.findByIcsFileName(p.getIcsFileName());
+            }
+        }
+
+        return null;
     }
 
 //    public List<ScheduleEntity> retrieveByDateRange(String userId, LocalDate dtStart, LocalDate dtEnd) {
@@ -150,5 +159,4 @@ public class CalendarService {
         }
         return scheduleRepository.findByUid(entity.getUid());
     }
-
 }
