@@ -22,10 +22,8 @@ import java.util.Collections;
 @RequestMapping("/schedule")
 public class ScheduleController {
 
-    @Autowired
-    CalendarService calendarService;
-    @Autowired
-    CategoryService categoryService;
+    @Autowired CalendarService calendarService;
+    @Autowired CategoryService categoryService;
 
     /**
      * Calendar Component 생성
@@ -96,6 +94,11 @@ public class ScheduleController {
                                       @PathVariable("scheduleUid") String uid) {
         calendarService.confirm(uid);
         return ResponseEntity.status(HttpStatus.NO_CONTENT).body(null);
+    }
+
+    @GetMapping("/retrieve")
+    public ResponseEntity<?> retrieve(@AuthenticationPrincipal String userId) {
+
     }
 
 }
