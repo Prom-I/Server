@@ -11,6 +11,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 
@@ -51,7 +52,23 @@ public class VoteService {
     }
 
     // 내가 어떤 Preference에 투표를 했는가
-    public PreferenceEntity retreive(){
-        return null;
+    public List<VoteEntity> retreive(String promiseUid, String userId){
+        List<PreferenceEntity> preferences = preferenceRepository.findByPromiseUid(promiseUid);
+        UserEntity user = userRepository.findByUserId(userId);
+        List<VoteEntity> result = new ArrayList<>();
+        for (PreferenceEntity p : preferences) {
+            Specification<VoteEntity> spec = VoteRepository.findPreferenceByUser(p.getUid(), user.getUid());
+            List<VoteEntity> votes = voteRepository.findAll(spec);
+            result.addAll(votes);
+        }
+        return result;
+    }
+
+    public void deleteVotes(String promiseUid) {
+        List<PreferenceEntity> preferences = preferenceRepository.findByPromiseUid(promiseUid);
+        for (PreferenceEntity p : preferences) {
+            voteRepository.deleteAll(voteRepository.findByPreferenceUid(p.getUid()));
+        }
+
     }
 }

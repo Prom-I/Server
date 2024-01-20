@@ -2,17 +2,18 @@ package com.example.tomeettome.Controller;
 
 import com.example.tomeettome.DTO.BlockDTO;
 import com.example.tomeettome.DTO.CaldavDTO;
-import com.example.tomeettome.DTO.NotificationDTO;
 import com.example.tomeettome.Model.AppointmentBlockEntity;
 import com.example.tomeettome.Model.PreferenceEntity;
 import com.example.tomeettome.Model.PromiseEntity;
 import com.example.tomeettome.Service.NotificationService;
 import com.example.tomeettome.Service.PreferenceService;
 import com.example.tomeettome.Service.PromiseService;
+import com.example.tomeettome.Service.VoteService;
 import lombok.extern.slf4j.Slf4j;
 import net.fortuna.ical4j.data.ParserException;
 import net.fortuna.ical4j.model.Property;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
@@ -36,6 +37,7 @@ public class PreferenceController {
     @Autowired PreferenceService preferenceService;
     @Autowired PromiseService promiseService;
     @Autowired NotificationService notificationService;
+    @Autowired VoteService voteService;
     /**
      *
      * @param userId Preference의 Organizer
@@ -117,48 +119,51 @@ public class PreferenceController {
         return ResponseEntity.ok().headers(headers).body(CaldavDTO.setPreferenceValue(preferences, promise));
     }
 
+
+
     // 약속 확정 API
     // CalvDTO 형태로 확정을 약속의 형태를 보내주면
     // 약속의 Status를 바꾸고
     // 약속의 Dtstart와 DtEnd를 수정해야 되고
     // 약속의 참여자 수정
-    @PutMapping("/confirm")
-    public ResponseEntity<String> confirmPromise(@RequestBody String component) throws ParserException, IOException, URISyntaxException {
+    @PutMapping("/confirm/{teamIcsFileName}")
+    public ResponseEntity<String> confirmPromise(@RequestBody String component,
+                                                 @PathVariable("teamIcsFileName") String teamIcsFileName) throws ParserException, IOException, URISyntaxException {
         CaldavDTO dto = new CaldavDTO(component);
         PromiseEntity promise = CaldavDTO.toPromiseEntity(dto);
 
         boolean result = promiseService.isPromiseConfirmed(promise);
 
+        // 확정이든 수정이든 변경사항 DB에 저장
         promise = promiseService.confirm(promise);
 
-        NotificationDTO notification = new NotificationDTO();
+        // 알림만 다르게 해서 날리면 됨
+        // result가 true : 약속 수정
+        // false : 약속 최초 확정
+        notificationService.sendNotificatons(
+                notificationService.makeMessagesByToken(
+                        notificationService.makeModifyOrConfirmPromiseNotiDTOList(teamIcsFileName, result)));
 
-//        if (result) { // 약속 수정
-//
-//            notification.builder()
-//                    .fcmToken()
-//                    .body()
-//                    .title()
-//                    .build();
-//        }
-//        else { // 약속 최초 확정
-//            notification.builder()
-//                    .fcmToken()
-//                    .body()
-//                    .title()
-//                    .build();
-//        }
-
-
-        notificationService.makeMessageByToken(notification);
         return ResponseEntity.ok().body(CaldavDTO.setPromiseValue(Collections.singletonList(promise)));
     }
 
     // 약속 갱신 API
 
     // 약속 삭제 API
+    // Promise 테이블 삭제 -> promiseService 4
+    // 관련된 Vote 테이블 삭제 -> voteService 3
+    // 관련된 Preference 테이블 삭제 -> preferenceService 2
+    // 관련된 AppointmentBlock 테이블 삭제 -> preferenceService 1
+    @DeleteMapping("/{promiseUid}")
+    public ResponseEntity<?> deletePromise(@PathVariable("promiseUid") String promiseUid) {
+        preferenceService.deletePreferences(promiseUid);
+        preferenceService.deleteAppointmentBlocks(promiseUid);
+        voteService.deleteVotes(promiseUid);
+        promiseService.deletePromise(promiseUid);
+        return ResponseEntity.status(HttpStatus.NO_CONTENT).body(null);
+    }
 
-    // 직접 선택으로 만든 약속 생성 API
+    // 직접 선택으로 만든 약속 추천 생성 API
 }
 
 

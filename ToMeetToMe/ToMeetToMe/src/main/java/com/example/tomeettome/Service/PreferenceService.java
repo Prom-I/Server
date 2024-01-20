@@ -304,6 +304,14 @@ public class PreferenceService {
         }
     }
 
+    public void deleteAppointmentBlocks(String promiseUid) {
+        appointmentBlockRepository.deleteAll(appointmentBlockRepository.findByPromiseUid(promiseUid));
+    }
+
+    public void deletePreferences(String promiseUid) {
+        preferenceRepository.deleteAll(preferenceRepository.findByPromiseUid(promiseUid));
+    }
+
     private static String getUserIdFromIcsFileName(String icsFileName) {
         return icsFileName.substring(0, icsFileName.length() - 4);
     }

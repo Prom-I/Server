@@ -44,7 +44,6 @@ public class PromiseService {
     public PromiseEntity confirm(PromiseEntity promise){
         Optional<PromiseEntity> entity = promiseRepository.findById(promise.getUid());
 
-
         entity.ifPresent( p -> {
             List<List<String>> attendance = null;
             try {
@@ -53,7 +52,7 @@ public class PromiseService {
                 throw new RuntimeException(e);
             }
             p.setStatus("CONFIRMED");
-//            p.setLocation(promise.getLocation());
+            p.setLocation(promise.getLocation() != null ? promise.getLocation() : p.getLocation());
             p.setDtStart(promise.getDtStart());
             p.setDtEnd(promise.getDtEnd());
             p.setAttendee(attendance.get(0).toString());
@@ -95,5 +94,7 @@ public class PromiseService {
         else return false;
     }
 
-
+    public void deletePromise(String promiseUid) {
+        promiseRepository.delete(promiseRepository.findById(promiseUid).get());
+    }
 }
