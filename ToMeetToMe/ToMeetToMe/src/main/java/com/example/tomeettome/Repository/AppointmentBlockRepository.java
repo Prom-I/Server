@@ -12,6 +12,7 @@ import java.util.List;
 public interface AppointmentBlockRepository extends JpaRepository<AppointmentBlockEntity, String> {
     List<AppointmentBlockEntity> findByPromiseUidOrderByRateDesc(String promiseUid);
     AppointmentBlockEntity findByTimestamp(Timestamp time);
+    List<AppointmentBlockEntity> findByPromiseUid(String promiseUid);
 
     @Query(value = "SELECT json_extract(absentee, '$.name') FROM appointment_block WHERE timestamp = :ts", nativeQuery = true)
     List<String> findNameByTimestamp(@Param("ts") Timestamp timestamp);

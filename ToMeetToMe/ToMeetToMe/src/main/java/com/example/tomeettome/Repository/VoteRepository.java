@@ -8,6 +8,7 @@ import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
 import java.util.List;
 
 public interface VoteRepository extends JpaRepository<VoteEntity, String>, JpaSpecificationExecutor<VoteEntity> {
+    List<VoteEntity> findByPreferenceUid(String preferenceUid);
     List<VoteEntity> findAll(Specification<VoteEntity> spec);
 
     static Specification<VoteEntity> findPreferenceByUser(String preferenceUid, String userUid) {
