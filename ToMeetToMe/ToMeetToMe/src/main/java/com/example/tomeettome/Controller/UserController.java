@@ -211,12 +211,26 @@ public class UserController {
             userService.acceptFollowRequest(followerId, "yourUserId2");
             Message message = notificationService.makeMessageByToken(notificationService.makeAcceptFollowNotiDTO(followerId, userId));
             notificationService.sendNotificaton(message);
-            return ResponseEntity.ok().body(null);
+            return ResponseEntity.status(HttpStatus.OK).body(null);
         }
         catch (Exception e) {
             return ResponseEntity.badRequest().body(e);
         }
+    }
 
+    // 친구 끊기 API
+    // 끊을 친구의 id를 parameter로
+    @DeleteMapping("/unfollow/{followingId}")
+    public ResponseEntity<?> unfollow(@AuthenticationPrincipal String userId,
+                                      @PathVariable("followingId") String followingId) {
+        try {
+            userService.deleteCalenderPermission(userId, followingId);
+            return ResponseEntity.status(HttpStatus.NO_CONTENT).body(null);
+
+        }
+        catch (Exception e) {
+            return ResponseEntity.badRequest().body(e);
+        }
     }
 
     // User를 주면 

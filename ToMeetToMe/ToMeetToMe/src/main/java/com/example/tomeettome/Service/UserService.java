@@ -353,10 +353,29 @@ public class UserService {
 
         if(follower != null && following != null) {
             // Specification
+            // following-ownerOriginKey(권한의 대상자), follower-userId(권한의 소유자)
+            // follower은 following의 permission을 가짐
             Specification<CalendarPermissionEntity> spec = CalendarPermissionRepository.findCalendarPermission(following.getUid(), follower.getUserId());
             CalendarPermissionEntity calendarPermission = calendarPermissionRepository.findOne(spec);
             calendarPermission.setPermissionLevel("member");
             calendarPermissionRepository.save(calendarPermission);
+        }
+        else {
+            log.error("user not exist");
+        }
+    }
+
+    public void deleteCalenderPermission(String followerId, String followingId) {
+        UserEntity follower = userRepository.findByUserId(followerId);
+        UserEntity following = userRepository.findByUserId(followingId);
+
+        if(follower != null && following != null) {
+            // Specification
+            // following-ownerOriginKey(권한의 대상자), follower-userId(권한의 소유자)
+            // follower은 following의 permission을 가짐
+            Specification<CalendarPermissionEntity> spec = CalendarPermissionRepository.findCalendarPermission(following.getUid(), follower.getUserId());
+            CalendarPermissionEntity calendarPermission = calendarPermissionRepository.findOne(spec);
+            calendarPermissionRepository.delete(calendarPermission);
         }
         else {
             log.error("user not exist");
