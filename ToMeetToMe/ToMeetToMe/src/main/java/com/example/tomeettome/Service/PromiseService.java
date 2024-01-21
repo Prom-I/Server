@@ -1,14 +1,18 @@
 package com.example.tomeettome.Service;
 
 import com.example.tomeettome.Model.AppointmentBlockEntity;
+import com.example.tomeettome.Model.CalendarEntity;
+import com.example.tomeettome.Model.CalendarPermissionEntity;
 import com.example.tomeettome.Model.PromiseEntity;
 import com.example.tomeettome.Repository.AppointmentBlockRepository;
+import com.example.tomeettome.Repository.CalendarPermissionRepository;
 import com.example.tomeettome.Repository.PromiseRepository;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 
 import java.io.IOException;
@@ -23,12 +27,29 @@ import java.util.Optional;
 public class PromiseService {
     @Autowired PromiseRepository promiseRepository;
     @Autowired AppointmentBlockRepository appointmentBlockRepository;
+    @Autowired CalendarPermissionRepository calendarPermissionRepository;
+
     public PromiseEntity create(PromiseEntity promise) {
         return promiseRepository.save(promise);
     }
 
     public List<PromiseEntity> retrieve(String icsFileName) {
         return promiseRepository.findByIcsFileName(icsFileName);
+    }
+
+    public List<PromiseEntity> retrieveOnlyConfirmedPromises(String userId) {
+        List<CalendarPermissionEntity> calendarPermissionEntities = calendarPermissionRepository.findByUserId(userId);
+        List<PromiseEntity> promise = new ArrayList<>();
+
+        // CalendarPermission 중에 팀의 Calendar를 찾기 위해
+        for (CalendarPermissionEntity p : calendarPermissionEntities) {
+            if (p.getOwnerType().equals("team")) {
+                Specification<PromiseEntity> spec = PromiseRepository.getConfirmedPromise(p.getIcsFileName());
+                promise.addAll(promiseRepository.findAll(spec));
+            }
+        }
+
+        return promise;
     }
 
     public List<AppointmentBlockEntity> retrieveAppointmentBlocks(String promiseUid) {

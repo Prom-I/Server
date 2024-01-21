@@ -4,6 +4,7 @@ import com.example.tomeettome.DTO.*;
 import com.example.tomeettome.Model.ScheduleEntity;
 import com.example.tomeettome.Service.CalendarService;
 import com.example.tomeettome.Service.CategoryService;
+import com.example.tomeettome.Service.PromiseService;
 import lombok.extern.slf4j.Slf4j;
 import net.fortuna.ical4j.data.ParserException;
 import net.fortuna.ical4j.model.Property;
@@ -14,6 +15,7 @@ import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
 import java.io.IOException;
+import java.net.URISyntaxException;
 import java.text.ParseException;
 import java.util.Collections;
 
@@ -24,6 +26,7 @@ public class ScheduleController {
 
     @Autowired CalendarService calendarService;
     @Autowired CategoryService categoryService;
+    @Autowired PromiseService promiseService;
 
     /**
      * Calendar Component 생성
@@ -97,7 +100,11 @@ public class ScheduleController {
     }
 
     @GetMapping("/retrieve")
-    public ResponseEntity<?> retrieve(@AuthenticationPrincipal String userId) {
+    public String retrieve(@AuthenticationPrincipal String userId) throws ParseException, URISyntaxException {
+        StringBuilder sb = new StringBuilder();
+        sb.append(CaldavDTO.setScheduleValue(calendarService.retrieveOnlyUser("yourUserId1")));
+        sb.append(CaldavDTO.setPromiseValue(promiseService.retrieveOnlyConfirmedPromises("yourUserId1")));
+        return sb.toString();
 
     }
 

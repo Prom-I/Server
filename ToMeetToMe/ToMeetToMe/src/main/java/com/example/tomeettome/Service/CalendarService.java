@@ -101,19 +101,6 @@ public class CalendarService {
         return scheduleRepository.findByIcsFileName(calendar.getIcsFileName());
     }
 
-    // 개인 일정 + 팀 약속
-    public List<ScheduleEntity> retrieve(String userId) {
-        List<CalendarPermissionEntity> calendarPermissionEntities = calendarPermissionRepository.findByUserId(userId);
-
-        for (CalendarPermissionEntity p : calendarPermissionEntities) {
-            if (p.getOwnerType().equals("user")) {
-                scheduleRepository.findByIcsFileName(p.getIcsFileName());
-            }
-        }
-
-        return null;
-    }
-
 //    public List<ScheduleEntity> retrieveByDateRange(String userId, LocalDate dtStart, LocalDate dtEnd) {
 //        LocalDateTime dtStartDateTime = dtStart.atTime(LocalTime.MIN); // 시작날짜에 00시 00분 00초
 //        LocalDateTime dtEndDateTime = dtEnd.atTime(LocalTime.MAX); // 끝날짜에 23시 59분 59초
