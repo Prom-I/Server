@@ -4,29 +4,26 @@ import com.example.tomeettome.DTO.CaldavDTO;
 import com.example.tomeettome.Model.*;
 import com.example.tomeettome.Repository.*;
 import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.extern.slf4j.Slf4j;
-import net.fortuna.ical4j.model.property.Attendee;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 
-import java.sql.Time;
 import java.sql.Timestamp;
-import java.time.DayOfWeek;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.time.temporal.ChronoUnit;
 import java.util.*;
-import java.util.AbstractMap.SimpleEntry;
 
 @Slf4j
 @Service
 
 
 public class PreferenceService {
+    @Autowired
+    private PromiseRepository promiseRepository;
     @Autowired PreferenceRepository preferenceRepository;
     @Autowired CalendarService calendarService;
     @Autowired TeamRepository teamRepository;
@@ -285,11 +282,32 @@ public class PreferenceService {
         return preferenceRepository.findByPromiseUid(promiseUid);
     }
 
-    private void savePreference(PreferenceEntity entity) {
+    public void savePreference(PreferenceEntity entity) {
         preferenceRepository.save(entity);
     }
 
-    private void saveAppointmentBlock(HashMap<Timestamp, AttendanceRecord> ab, String promiseUid) throws JsonProcessingException {
+    // 중복 체크
+    public boolean duplicateTest(PreferenceEntity entity) {
+        List<PreferenceEntity> original = preferenceRepository.findByPromiseUid(entity.getPromiseUid());
+        for (PreferenceEntity p : original) {
+            if (entity.getDtStart().equals(p.getDtStart())) { // 같은 날짜의 preference
+                return false;
+            }
+        }
+        return true;
+    }
+
+    // 이 Promise에 접근할 권한이 있는지 권한 검사
+    public boolean permissionTest(String promiseUid, String userId) {
+        PromiseEntity promise = promiseRepository.findById(promiseUid).get();
+        List<CalendarPermissionEntity> permissions = calendarPermissionRepository.findByUserId(userId);
+        for (CalendarPermissionEntity p : permissions) {
+            if(promise.getIcsFileName().equals(p.getIcsFileName())) return true;
+        }
+        return false;
+    }
+
+    public void saveAppointmentBlock(HashMap<Timestamp, AttendanceRecord> ab, String promiseUid) throws JsonProcessingException {
         for (Timestamp time : ab.keySet()) {
             ObjectMapper objectMapper = new ObjectMapper();
             // {"uid" : "" , "username" : ""} , ,,,,

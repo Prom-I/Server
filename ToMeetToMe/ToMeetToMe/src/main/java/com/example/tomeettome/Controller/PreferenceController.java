@@ -16,6 +16,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.security.core.parameters.P;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
@@ -119,8 +120,6 @@ public class PreferenceController {
         return ResponseEntity.ok().headers(headers).body(CaldavDTO.setPreferenceValue(preferences, promise));
     }
 
-
-
     // 약속 확정 API
     // CalvDTO 형태로 확정을 약속의 형태를 보내주면
     // 약속의 Status를 바꾸고
@@ -148,6 +147,14 @@ public class PreferenceController {
     }
 
     // 약속 갱신 API
+    // preference 삭제
+    // appointment block 삭제
+    // vote 삭제
+//    @GetMapping("/refresh/{icsFileName}/{promiseUid}")
+//    public ResponseEntity<?> refresh(@PathVariable("icsFileName") String icsFileName,
+//                                     @PathVariable("promiseUid") String promiseUid) {
+//
+//    }
 
     // 약속 삭제 API
     // Promise 테이블 삭제 -> promiseService 4
@@ -164,6 +171,26 @@ public class PreferenceController {
     }
 
     // 직접 선택으로 만든 약속 추천 생성 API
+    @PutMapping("/create/custom/{promiseUid}")
+    public ResponseEntity<?> createCustomPreference(@AuthenticationPrincipal String userId,
+                                                    @RequestBody String component,
+                                                    @PathVariable("promiseUid") String promiseUid) throws ParserException, IOException {
+        CaldavDTO dto = new CaldavDTO(component);
+        PreferenceEntity preference = dto.toPreferenceEntity(dto);
+        preference.setPromiseUid(promiseUid);
+        preference.setLikes(0);
+        boolean duplicateTest = preferenceService.duplicateTest(preference);
+        boolean permissionTest = preferenceService.permissionTest(preference.getPromiseUid(), userId);
+        if (duplicateTest && permissionTest) {
+            preferenceService.savePreference(preference);
+            return ResponseEntity.status(HttpStatus.OK).body(null);
+        }
+        else {
+            log.error("preference already exist or, validation failed");
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(null);
+
+        }
+    }
 }
 
 
