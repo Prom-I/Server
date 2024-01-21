@@ -2,6 +2,7 @@ package com.example.tomeettome.Service;
 
 import com.example.tomeettome.DTO.NotificationDTO;
 import com.example.tomeettome.Model.CalendarPermissionEntity;
+import com.example.tomeettome.Model.TeamEntity;
 import com.example.tomeettome.Model.UserEntity;
 import com.example.tomeettome.Repository.CalendarPermissionRepository;
 import com.example.tomeettome.Repository.TeamRepository;
@@ -27,6 +28,10 @@ public class NotificationService {
 
     @Autowired private FirebaseMessaging firebaseMessaging;
     @Autowired UserRepository userRepository;
+
+    @Autowired TeamService teamService;
+
+
 
     public NotificationDTO makefollowNotiDTO(String followerId, String followingId) {
         UserEntity follower = userRepository.findByUserId(followerId);
@@ -98,7 +103,6 @@ public class NotificationService {
                 Notification notification = Notification.builder()
                         .setTitle(dto.getTitle())
                         .setBody(dto.getBody())
-
                         .build();
                 Message message = Message.builder()
                         .setToken(user.getFcmToken())
@@ -140,6 +144,30 @@ public class NotificationService {
             }
         }
         return msgList;
+    }
+
+    public List<Message> makeInvitesMessages(TeamEntity teamEntity,String inviterId,String [] invitees) {
+        List<Message> messageList = new ArrayList<>();
+
+        for(String invitee : invitees){
+
+            if(!(teamService.checkUserExistenceInTeam(teamEntity,invitee))) // 이미 팀에 존재하는데 초대하는 지 확인하는 예외처리
+                continue;
+
+            Notification notification = Notification.builder()
+                    .setTitle("그룹 초대 알림")
+                    .setBody(inviterId+"이 당신을"+ teamEntity.getName()+"에 초대하였습니다")
+                    .build();
+
+            Message message = Message.builder()
+                    .setToken(userRepository.findByUserId(invitee).getFcmToken())
+                    .setNotification(notification)
+                    .putData("teamOriginKey",teamEntity.getOriginKey()) // 데이터 암호화?
+                    .build();
+            messageList.add(message);
+        }
+
+        return messageList;
     }
 
     public void sendNotificaton(Message message) {

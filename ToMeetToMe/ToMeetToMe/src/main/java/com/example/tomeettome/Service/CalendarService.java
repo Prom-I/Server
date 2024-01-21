@@ -18,6 +18,7 @@ public class CalendarService {
     @Autowired ScheduleRepository scheduleRepository;
     @Autowired CategoryRepository categoryRepository;
 
+
     public CalendarEntity createUserCalendar(UserEntity user) {
         CalendarEntity calendar = CalendarEntity.builder()
                 .icsFileName(user.getUserId()+".ics")
@@ -28,7 +29,7 @@ public class CalendarService {
 
     public CalendarEntity creatTeamCalendar(TeamEntity team) {
         CalendarEntity calendar = CalendarEntity.builder()
-                .icsFileName("TEAM"+team.getFounderId()+".ics")
+                .icsFileName(generateTeamIcsFilename(team.getFounderId()))
                 .componentType("VEVENT")
                 .build();
         return calendarRepository.save(calendar);
@@ -145,5 +146,22 @@ public class CalendarService {
             entity.setStatus("TENTATIVE");
         }
         return scheduleRepository.findByUid(entity.getUid());
+    }
+
+    public CalendarPermissionEntity addNewTeamUser(TeamEntity teamEntity, String inviteeId) {
+
+        CalendarPermissionEntity entity = CalendarPermissionEntity.builder()
+                .icsFileName(generateTeamIcsFilename(teamEntity.getFounderId()))
+                .ownerOriginKey(teamEntity.getOriginKey())
+                .ownerType("team")
+                .permissionLevel("readOnly")
+                .userId(inviteeId)
+                .build();
+
+        return calendarPermissionRepository.save(entity);
+    }
+
+    private String generateTeamIcsFilename(String teamFounderId){
+        return "TEAM"+teamFounderId+".ics";
     }
 }

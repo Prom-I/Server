@@ -7,18 +7,19 @@ import com.example.tomeettome.DTO.TestDTO;
 import com.example.tomeettome.Model.CalendarEntity;
 import com.example.tomeettome.Model.TeamEntity;
 import com.example.tomeettome.Service.CalendarService;
+import com.example.tomeettome.Service.NotificationService;
 import com.example.tomeettome.Service.TeamService;
+import com.google.api.Http;
+import com.google.firebase.messaging.Message;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 import java.util.Collections;
+import java.util.List;
 
 @Slf4j
 @RestController
@@ -27,6 +28,8 @@ public class TeamController {
 
     @Autowired TeamService teamService;
     @Autowired CalendarService calendarService;
+    @Autowired NotificationService notificationService;
+
 
     /**
      * 팀을 만들 때, 팀원이 한명도 없으면 못 만듦
@@ -59,6 +62,31 @@ public class TeamController {
         return ResponseEntity.status(HttpStatus.CREATED).body(response);
     }
 
+    /***
+     * 팀 초대 API
+     * @return
+     */
+    @PostMapping("/invite/{groupOriginKey}")
+    public ResponseEntity<?> invite(@AuthenticationPrincipal String inviterId,
+                                    @PathVariable("groupOriginKey") String groupOriginKey,
+                                    @RequestBody TeamDTO dto){
+        TeamEntity teamEntity =teamService.getTeamEntityByOriginKey(groupOriginKey);
+        List<Message> messages =  notificationService.makeInvitesMessages(teamEntity,inviterId,dto.getTeamUsers());
+        notificationService.sendNotificatons(messages);
 
+        return ResponseEntity.status(HttpStatus.CREATED).build();
+    }
+
+    /***
+     * 팀 초대 수락 API , 팀 초대 거절은
+     * @return
+     */
+    @PutMapping("/{groupOriginKey}/accept")
+    public ResponseEntity<?> acceptInvite(@AuthenticationPrincipal String inviteeId,
+                                          @PathVariable("groupOriginKey") String groupOriginKey){
+
+        calendarService.addNewTeamUser(teamService.getTeamEntityByOriginKey(groupOriginKey),inviteeId);
+        return ResponseEntity.status(HttpStatus.CREATED).build();
+    }
 
 }
