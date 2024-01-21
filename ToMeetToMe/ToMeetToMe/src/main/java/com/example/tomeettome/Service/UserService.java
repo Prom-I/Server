@@ -358,7 +358,7 @@ public class UserService {
             // following-ownerOriginKey(권한의 대상자), follower-userId(권한의 소유자)
             // follower은 following의 permission을 가짐
             Specification<CalendarPermissionEntity> spec = CalendarPermissionRepository.findCalendarPermission(following.getUid(), follower.getUserId());
-            CalendarPermissionEntity calendarPermission = calendarPermissionRepository.findOne(spec);
+            CalendarPermissionEntity calendarPermission = calendarPermissionRepository.findOne(spec).orElseThrow();
             calendarPermission.setPermissionLevel(PERMISSIONLEVEL.MEMBER.name());
             calendarPermissionRepository.save(calendarPermission);
         }
@@ -376,7 +376,7 @@ public class UserService {
             // following-ownerOriginKey(권한의 대상자), follower-userId(권한의 소유자)
             // follower은 following의 permission을 가짐
             Specification<CalendarPermissionEntity> spec = CalendarPermissionRepository.findCalendarPermission(following.getUid(), follower.getUserId());
-            CalendarPermissionEntity calendarPermission = calendarPermissionRepository.findOne(spec);
+            CalendarPermissionEntity calendarPermission = calendarPermissionRepository.findOne(spec).orElseThrow();
             calendarPermissionRepository.delete(calendarPermission);
         }
         else {

@@ -20,6 +20,7 @@ import org.springframework.web.bind.annotation.*;
 
 import java.util.Collections;
 import java.util.List;
+import java.util.stream.Collectors;
 
 @Slf4j
 @RestController
@@ -87,7 +88,17 @@ public class TeamController {
                                           @PathVariable("groupOriginKey") String groupOriginKey){
 
         calendarService.addNewTeamUser(teamService.getTeamEntityByOriginKey(groupOriginKey),inviteeId);
+        teamService.increaseNumOfUsers(groupOriginKey);
+
         return ResponseEntity.status(HttpStatus.CREATED).build();
+    }
+
+    @GetMapping("/retrieve")
+    public ResponseEntity<?> retrieveTeamByUserId(@AuthenticationPrincipal String userId){
+        List<TeamEntity> teamEntity = teamService.retrieveTeamByUserId(userId);
+        List<TeamDTO> dtos = teamEntity.stream().map(TeamDTO::new).collect(Collectors.toList());
+
+        return ResponseEntity.status(HttpStatus.OK).body(dtos);
     }
 
 }

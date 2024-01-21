@@ -17,6 +17,13 @@ public class TeamDTO {
     private String image;
     private String [] teamUsers;
 
+
+    public TeamDTO(TeamEntity entity) {
+        this.name = entity.getName();
+        this.founderId = entity.getFounderId();
+        this.image = entity.getImage();
+    }
+
     // DTO -> Entity 변환
     public static TeamEntity toEntity(final TeamDTO dto) {
         return TeamEntity.builder()
