@@ -1,5 +1,6 @@
 package com.example.tomeettome.Service;
 
+import com.example.tomeettome.Constant.OWNERTYPE;
 import com.example.tomeettome.Model.AppointmentBlockEntity;
 import com.example.tomeettome.Model.CalendarEntity;
 import com.example.tomeettome.Model.CalendarPermissionEntity;
@@ -43,7 +44,7 @@ public class PromiseService {
 
         // CalendarPermission 중에 팀의 Calendar를 찾기 위해
         for (CalendarPermissionEntity p : calendarPermissionEntities) {
-            if (p.getOwnerType().equals("team")) {
+            if (p.getOwnerType().equals(OWNERTYPE.TEAM.name())) {
                 Specification<PromiseEntity> spec = PromiseRepository.getConfirmedPromise(p.getIcsFileName());
                 promise.addAll(promiseRepository.findAll(spec));
             }

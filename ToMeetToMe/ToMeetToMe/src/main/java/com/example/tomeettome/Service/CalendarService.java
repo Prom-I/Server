@@ -1,9 +1,14 @@
 package com.example.tomeettome.Service;
 
+import com.example.tomeettome.Constant.OWNERTYPE;
+import com.example.tomeettome.Constant.PERMISSIONLEVEL;
 import com.example.tomeettome.DTO.TeamDTO;
 import com.example.tomeettome.Model.*;
 import com.example.tomeettome.Repository.*;
 import lombok.extern.slf4j.Slf4j;
+import net.fortuna.ical4j.model.Content;
+import net.fortuna.ical4j.model.Property;
+import net.fortuna.ical4j.model.property.Attendee;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
@@ -17,6 +22,7 @@ public class CalendarService {
     @Autowired CalendarPermissionRepository calendarPermissionRepository;
     @Autowired ScheduleRepository scheduleRepository;
     @Autowired CategoryRepository categoryRepository;
+
 
 
     public CalendarEntity createUserCalendar(UserEntity user) {
@@ -39,8 +45,8 @@ public class CalendarService {
         CalendarPermissionEntity calendarPermission = CalendarPermissionEntity.builder()
                 .icsFileName(calendar.getIcsFileName())
                 .ownerOriginKey(user.getUid())
-                .ownerType("user")
-                .permissionLevel("admin")
+                .ownerType(OWNERTYPE.USER.name())
+                .permissionLevel(PERMISSIONLEVEL.ADMIN.name())
                 .userId(user.getUserId())
                 .build();
         return calendarPermissionRepository.save(calendarPermission);
@@ -49,16 +55,16 @@ public class CalendarService {
     public CalendarPermissionEntity createTeamCalendarPermission(TeamEntity team, TeamDTO dto, CalendarEntity calendar) {
 
         for (String user : dto.getTeamUsers()) {
-            String permissionLevel = "readOnly";
+            String permissionLevel = PERMISSIONLEVEL.MEMBER.name();
 
             if(user == team.getFounderId()){ // 팀장꺼
-                permissionLevel = "admin";
+                permissionLevel = PERMISSIONLEVEL.ADMIN.name();
             }
             // 나머지
             CalendarPermissionEntity calendarPermission = CalendarPermissionEntity.builder()
                     .icsFileName(calendar.getIcsFileName())
                     .ownerOriginKey(team.getOriginKey())
-                    .ownerType("team")
+                    .ownerType(OWNERTYPE.TEAM.name())
                     .permissionLevel(permissionLevel)
                     .userId(user)
                     .build();
@@ -78,7 +84,7 @@ public class CalendarService {
 
         // CalendarPermission 중에 user 개인의 Calendar를 찾기 위해
         for (CalendarPermissionEntity p : calendarPermissionEntities) {
-            if (p.getOwnerType().equals("user")) {
+            if (p.getOwnerType().equals(OWNERTYPE.USER)) {
                 permission = p;
             }
         }
@@ -92,7 +98,7 @@ public class CalendarService {
 
         // CalendarPermission 중에 user 개인의 Calendar를 찾기 위해
         for (CalendarPermissionEntity p : calendarPermissionEntities) {
-            if (p.getOwnerType().equals("user")) {
+            if (p.getOwnerType().equals(OWNERTYPE.USER)) {
                 permission = p;
             }
         }
@@ -153,8 +159,8 @@ public class CalendarService {
         CalendarPermissionEntity entity = CalendarPermissionEntity.builder()
                 .icsFileName(generateTeamIcsFilename(teamEntity.getFounderId()))
                 .ownerOriginKey(teamEntity.getOriginKey())
-                .ownerType("team")
-                .permissionLevel("readOnly")
+                .ownerType(OWNERTYPE.TEAM.name())
+                .permissionLevel(PERMISSIONLEVEL.MEMBER.name())
                 .userId(inviteeId)
                 .build();
 

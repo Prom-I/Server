@@ -1,5 +1,7 @@
 package com.example.tomeettome.Service;
 
+import com.example.tomeettome.Constant.OWNERTYPE;
+import com.example.tomeettome.Constant.PERMISSIONLEVEL;
 import com.example.tomeettome.DTO.Apple.AppleKeyDTO;
 import com.example.tomeettome.Model.CalendarPermissionEntity;
 import com.example.tomeettome.Model.UserEntity;
@@ -280,7 +282,7 @@ public class UserService {
         JsonFactory jsonFactory = new JacksonFactory(); //lo 예시로 JacksonFactory 사용
         return jsonFactory;
     }
-    
+
     public UserEntity create(UserEntity user) {
         if(user == null || user.getUserId() == null ) {
             throw new RuntimeException("Invalid arguments");
@@ -334,10 +336,10 @@ public class UserService {
 
         if(follower != null && following != null) {
             CalendarPermissionEntity calendarPermission = CalendarPermissionEntity.builder()
-                    .ownerType("user")
+                    .ownerType(OWNERTYPE.USER.name())
                     .ownerOriginKey(following.getUid())
                     .userId(follower.getUserId())
-                    .permissionLevel("guest")
+                    .permissionLevel(PERMISSIONLEVEL.GUEST.name())
                     .icsFileName(following.getUserId() + ".ics")
                     .build();
             calendarPermissionRepository.save(calendarPermission);
@@ -357,7 +359,7 @@ public class UserService {
             // follower은 following의 permission을 가짐
             Specification<CalendarPermissionEntity> spec = CalendarPermissionRepository.findCalendarPermission(following.getUid(), follower.getUserId());
             CalendarPermissionEntity calendarPermission = calendarPermissionRepository.findOne(spec);
-            calendarPermission.setPermissionLevel("member");
+            calendarPermission.setPermissionLevel(PERMISSIONLEVEL.MEMBER.name());
             calendarPermissionRepository.save(calendarPermission);
         }
         else {
