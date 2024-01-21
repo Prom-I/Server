@@ -70,6 +70,7 @@ public class TeamController {
     public ResponseEntity<?> invite(@AuthenticationPrincipal String inviterId,
                                     @PathVariable("groupOriginKey") String groupOriginKey,
                                     @RequestBody TeamDTO dto){
+
         TeamEntity teamEntity =teamService.getTeamEntityByOriginKey(groupOriginKey);
         List<Message> messages =  notificationService.makeInvitesMessages(teamEntity,inviterId,dto.getTeamUsers());
         notificationService.sendNotificatons(messages);

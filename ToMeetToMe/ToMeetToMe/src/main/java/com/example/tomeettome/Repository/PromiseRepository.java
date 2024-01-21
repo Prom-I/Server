@@ -14,6 +14,5 @@ public interface PromiseRepository extends JpaRepository<PromiseEntity, String> 
         return (root, query, builder) ->
             builder.and(builder.equal(root.get("icsFileName"), icsFileName),
                     builder.equal(root.get("status"), "CONFIRMED"));
-
     }
 }

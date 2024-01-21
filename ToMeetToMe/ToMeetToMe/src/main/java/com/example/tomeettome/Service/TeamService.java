@@ -10,6 +10,7 @@ import com.example.tomeettome.Repository.CategoryRepository;
 import com.example.tomeettome.Repository.TeamRepository;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
@@ -26,14 +27,12 @@ public class TeamService {
     }
 
     public boolean checkUserExistenceInTeam(TeamEntity teamEntity , String userId){
-        List<CalendarPermissionEntity> calendarPermissionEntityList = calendarPermissionRepository.findByUserId(userId);
-        for (CalendarPermissionEntity entity: calendarPermissionEntityList) {
-            if(entity.getOriginKey() == teamEntity.getOriginKey()
-                    && entity.getOwnerType() == "team"
-                    && entity.getUserId() == userId )
-                return true;
-        }
-        return false;
+        Specification<CalendarPermissionEntity> spec = CalendarPermissionRepository.findCalendarPermission(teamEntity.getOriginKey(),userId);
+
+        if(spec == null)
+            return false;
+        else
+            return true;
     }
 
     public TeamEntity getTeamEntityByOriginKey(String groupOriginKey) {
