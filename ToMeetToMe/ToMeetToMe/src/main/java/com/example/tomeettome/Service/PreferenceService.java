@@ -330,7 +330,7 @@ public class PreferenceService {
         preferenceRepository.deleteAll(preferenceRepository.findByPromiseUid(promiseUid));
     }
 
-    private static String getUserIdFromIcsFileName(String icsFileName) {
+    public static String getUserIdFromIcsFileName(String icsFileName) {
         return icsFileName.substring(0, icsFileName.length() - 4);
     }
 

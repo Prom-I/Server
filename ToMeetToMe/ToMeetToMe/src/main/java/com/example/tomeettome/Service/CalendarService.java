@@ -23,8 +23,6 @@ public class CalendarService {
     @Autowired ScheduleRepository scheduleRepository;
     @Autowired CategoryRepository categoryRepository;
 
-
-
     public CalendarEntity createUserCalendar(UserEntity user) {
         CalendarEntity calendar = CalendarEntity.builder()
                 .icsFileName(user.getUserId()+".ics")

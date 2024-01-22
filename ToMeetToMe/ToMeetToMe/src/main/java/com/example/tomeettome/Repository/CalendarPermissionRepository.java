@@ -1,5 +1,7 @@
 package com.example.tomeettome.Repository;
 
+import com.example.tomeettome.Constant.OWNERTYPE;
+import com.example.tomeettome.Constant.PERMISSIONLEVEL;
 import com.example.tomeettome.Model.CalendarPermissionEntity;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.data.jpa.repository.JpaRepository;
@@ -22,6 +24,16 @@ public interface CalendarPermissionRepository extends JpaRepository<CalendarPerm
     static Specification<CalendarPermissionEntity> findCalendarPermission(String ownerOriginkey, String userId) {
         return (root, query, builder) -> builder.and(builder.equal(root.get("ownerOriginKey"), ownerOriginkey),
                 builder.equal(root.get("userId"), userId));
+    }
+
+    static Specification<CalendarPermissionEntity> findFollowingLists(String userId) {
+        return ((root, query, builder) -> builder.and(
+                builder.and(
+                        builder.equal(root.get("userId"), userId),
+                        builder.equal(root.get("ownerType"), OWNERTYPE.USER.name())
+                ),
+                builder.equal(root.get("permissionLevel"), PERMISSIONLEVEL.MEMBER.name())
+                ));
     }
 
     //JPQL(JPA Query Language) 사용

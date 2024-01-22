@@ -17,6 +17,7 @@ import org.json.JSONException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.security.core.userdetails.User;
 import org.springframework.web.bind.annotation.*;
 
 import java.io.IOException;
@@ -162,6 +163,25 @@ public class UserController {
         List<UserDTO> usersDTO = users.stream().map(UserDTO::new).collect(Collectors.toList());
 
         ResponseDTO<UserDTO> response = ResponseDTO.<UserDTO>builder().data(usersDTO).status("success").build();
+        return ResponseEntity.status(HttpStatus.OK).body(response);
+    }
+
+    @GetMapping("/retrieve/follow")
+    public ResponseEntity<?> retrieveFollowings(@AuthenticationPrincipal String userId) {
+        List<UserEntity> users = userService.retrieveFollowings(userId);
+        return ResponseEntity.status(HttpStatus.OK).body(users);
+    }
+
+    @GetMapping("/retrieve/profile")
+    public ResponseEntity<?> retrieveProfile(@AuthenticationPrincipal String userId) {
+        UserEntity user = userService.retrieveProfile(userId);
+        UserDTO dto = UserDTO.builder()
+                .userId(user.getUserId())
+                .userName(user.getUserName())
+                .image(user.getImage())
+                .platform(user.getPlatform())
+                .build();
+        ResponseDTO<UserDTO> response = ResponseDTO.<UserDTO>builder().data(Collections.singletonList(dto)).status("success").build();
         return ResponseEntity.status(HttpStatus.OK).body(response);
     }
 

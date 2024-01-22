@@ -44,6 +44,7 @@ public class UserService {
     @Autowired CalendarPermissionRepository calendarPermissionRepository;
     @Autowired TokenProvider tokenProvider;
 
+
     public UserEntity validateIdTokenGoogle(String idTokenString) throws GeneralSecurityException, IOException {
 
         GoogleIdTokenVerifier verifier = new GoogleIdTokenVerifier.Builder(getHttpTransport(), getJsonFactory())
@@ -304,6 +305,23 @@ public class UserService {
         return userRepository.findByUserNameLike("%" + pattern + "%");
     }
 
+    // 친구 조회 API
+    // 내가 갖고 있는 cp에서 ownertype이 User이고 permissionlevel이 member인거
+    public List<UserEntity> retrieveFollowings(String userId) {
+        Specification<CalendarPermissionEntity> spec = CalendarPermissionRepository.findFollowingLists(userId);
+        List<CalendarPermissionEntity> permissions = calendarPermissionRepository.findAll(spec);
+        List<UserEntity> users = new ArrayList<>();
+        for (CalendarPermissionEntity p : permissions) {
+            String followingId = PreferenceService.getUserIdFromIcsFileName(p.getIcsFileName());
+            users.add(userRepository.findByUserId(followingId));
+        }
+        return users;
+    }
+
+    public UserEntity retrieveProfile(String userId) {
+        return userRepository.findByUserId(userId);
+    }
+
     public UserEntity updateProfileImage(String userId, String image) {
         UserEntity user = userRepository.findByUserId(userId);
         user.setImage(image);
@@ -358,7 +376,7 @@ public class UserService {
             // following-ownerOriginKey(권한의 대상자), follower-userId(권한의 소유자)
             // follower은 following의 permission을 가짐
             Specification<CalendarPermissionEntity> spec = CalendarPermissionRepository.findCalendarPermission(following.getUid(), follower.getUserId());
-            CalendarPermissionEntity calendarPermission = calendarPermissionRepository.findOne(spec).orElseThrow();
+            CalendarPermissionEntity calendarPermission = calendarPermissionRepository.findOne(spec).get();
             calendarPermission.setPermissionLevel(PERMISSIONLEVEL.MEMBER.name());
             calendarPermissionRepository.save(calendarPermission);
         }
