@@ -40,4 +40,7 @@ public interface CalendarPermissionRepository extends JpaRepository<CalendarPerm
     @Query("SELECT c.ownerOriginKey FROM CalendarPermissionEntity c WHERE c.ownerType = :ownerType AND c.userId = :userId")
     List<String> findTeamOriginKeysByOwnerTypeAndUserId(@Param("ownerType") String ownerType
             , @Param("userId") String userId);
+
+    @Query("SELECT c.userId FROM CalendarPermissionEntity c WHERE c.ownerOriginKey = :key")
+    List<String> findUserIdsByTeamOriginKey(@Param("teamOriginKey") String key);
 }

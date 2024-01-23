@@ -1,15 +1,11 @@
 package com.example.tomeettome.Controller;
 
-import com.example.tomeettome.DTO.CalendarDTO;
-import com.example.tomeettome.DTO.ResponseDTO;
-import com.example.tomeettome.DTO.TeamDTO;
-import com.example.tomeettome.DTO.TestDTO;
+import com.example.tomeettome.DTO.*;
 import com.example.tomeettome.Model.CalendarEntity;
 import com.example.tomeettome.Model.TeamEntity;
 import com.example.tomeettome.Service.CalendarService;
 import com.example.tomeettome.Service.NotificationService;
 import com.example.tomeettome.Service.TeamService;
-import com.google.api.Http;
 import com.google.firebase.messaging.Message;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -18,6 +14,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
+import javax.persistence.EntityNotFoundException;
 import java.util.Collections;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -72,7 +69,7 @@ public class TeamController {
                                     @PathVariable("groupOriginKey") String groupOriginKey,
                                     @RequestBody TeamDTO dto){
 
-        TeamEntity teamEntity =teamService.getTeamEntityByOriginKey(groupOriginKey);
+        TeamEntity teamEntity =teamService.retrieveTeamEntity(groupOriginKey);
         List<Message> messages =  notificationService.makeInvitesMessages(teamEntity,inviterId,dto.getTeamUsers());
         notificationService.sendNotificatons(messages);
 
@@ -87,7 +84,7 @@ public class TeamController {
     public ResponseEntity<?> acceptInvite(@AuthenticationPrincipal String inviteeId,
                                           @PathVariable("groupOriginKey") String groupOriginKey){
 
-        calendarService.addNewTeamUser(teamService.getTeamEntityByOriginKey(groupOriginKey),inviteeId);
+        calendarService.addNewTeamUser(teamService.retrieveTeamEntity(groupOriginKey),inviteeId);
         teamService.increaseNumOfUsers(groupOriginKey);
 
         return ResponseEntity.status(HttpStatus.CREATED).build();
@@ -95,10 +92,32 @@ public class TeamController {
 
     @GetMapping("/retrieve")
     public ResponseEntity<?> retrieveTeamByUserId(@AuthenticationPrincipal String userId){
-        List<TeamEntity> teamEntity = teamService.retrieveTeamByUserId(userId);
+        List<TeamEntity> teamEntity = teamService.retrieveTeamEntities(userId);
         List<TeamDTO> dtos = teamEntity.stream().map(TeamDTO::new).collect(Collectors.toList());
 
         return ResponseEntity.status(HttpStatus.OK).body(dtos);
+    }
+
+
+    @PatchMapping("/update/{teamOriginKey}")
+    public ResponseEntity<?> updateTeam(@AuthenticationPrincipal String userId,
+                                        @PathVariable("teamOriginKey") String teamOriginKey,@RequestBody TeamDTO requestDTO){
+        // Team 설립자 만 수정 권한 존재
+        // Team 이름,Team founderId, image 만 수정가능
+
+        // Team founder 권한 check
+        if(!(teamService.isUserFounderOfTeam(userId,teamOriginKey)))
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).body(null);
+
+        try{
+            TeamEntity entity = teamService.updateTeam(teamOriginKey,TeamDTO.toEntity(requestDTO));
+            TeamDTO responseDTO = new TeamDTO(entity);
+            responseDTO.setTeamUsers(teamService.retrieveTeamUsers(entity));
+
+            return ResponseEntity.status(HttpStatus.OK).body(responseDTO);
+        }catch (EntityNotFoundException e){ // Request OriginKey 가 잘못되었을때
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).build();
+        }
     }
 
 }

@@ -7,6 +7,8 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+import java.util.List;
+
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
@@ -22,6 +24,10 @@ public class TeamDTO {
         this.name = entity.getName();
         this.founderId = entity.getFounderId();
         this.image = entity.getImage();
+    }
+
+    public void setTeamUsers(List<String> teamUsers) {
+        this.teamUsers = teamUsers.toArray(new String[0]);
     }
 
     // DTO -> Entity 변환
