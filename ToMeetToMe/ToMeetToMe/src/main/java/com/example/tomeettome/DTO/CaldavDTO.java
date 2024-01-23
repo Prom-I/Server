@@ -25,6 +25,7 @@ import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.time.ZoneOffset;
 import java.time.format.DateTimeFormatter;
+import java.time.temporal.ChronoUnit;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
@@ -163,7 +164,7 @@ public class CaldavDTO {
             vEvent.getProperties().add(new DtEnd(new DateTime(Date.from(p.getDtEnd().atZone(ZoneId.systemDefault()).toInstant()))));
             vEvent.getProperties().add(new Organizer(p.getOrganizerId()));
             vEvent.getProperties().add(new Status(p.getStatus()));
-
+            vEvent.getProperties().add(new XProperty(Property.EXPERIMENTAL_PREFIX + "DDAYS", String.valueOf(calculateDday(p.getDtStart()))));
             if (p.getStatus().equals("CONFIRMED")) { // 확정된 약속
                 //참석자랑 불참자 세팅
                 for(String attendee : stringToList(p.getAttendee())){
@@ -261,6 +262,13 @@ public class CaldavDTO {
         String[] items = input.split(",\\s*");
 
         return Arrays.asList(items);
+    }
+
+    public static long calculateDday(LocalDateTime dDay) {
+        LocalDateTime today = LocalDateTime.now();
+
+        // 오늘부터 D-Day까지 몇 일 남았는지 계산
+        return ChronoUnit.DAYS.between(today, dDay) + 1;
     }
 
 }
