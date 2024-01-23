@@ -86,7 +86,7 @@ public class PreferenceService {
         }
     }
 
-    public List<PreferenceEntity> create(PreferenceEntity entity, String icsFileName, CaldavDTO.Precondition precondition) throws JsonProcessingException {
+    public List<PreferenceEntity> create(String icsFileName, CaldavDTO.Precondition precondition) throws JsonProcessingException {
         long beforeTime = System.currentTimeMillis(); //코드 실행 전에 시간 받아오기
 
         // 조건 설정 (소요 시간, 기간대, 시간대, 선호 요일)
