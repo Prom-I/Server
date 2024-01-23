@@ -3,9 +3,7 @@ package com.example.tomeettome.Controller;
 import com.example.tomeettome.DTO.*;
 import com.example.tomeettome.Model.CalendarEntity;
 import com.example.tomeettome.Model.TeamEntity;
-import com.example.tomeettome.Service.CalendarService;
-import com.example.tomeettome.Service.NotificationService;
-import com.example.tomeettome.Service.TeamService;
+import com.example.tomeettome.Service.*;
 import com.google.firebase.messaging.Message;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -26,6 +24,7 @@ public class TeamController {
 
     @Autowired TeamService teamService;
     @Autowired CalendarService calendarService;
+    @Autowired PromiseService promiseService;
     @Autowired NotificationService notificationService;
 
 
@@ -130,7 +129,7 @@ public class TeamController {
             return ResponseEntity.status(HttpStatus.FORBIDDEN).body(null);
 
         try {
-            teamService.deleteTeamUser(teamService.retrieveTeamEntity(teamOriginKey), userDTO);
+            teamService.deleteTeamUser(teamOriginKey, userDTO);
             return ResponseEntity.status(HttpStatus.OK).build();
         }catch (Exception e){
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
@@ -141,12 +140,34 @@ public class TeamController {
     public ResponseEntity<?> leaveTeam(@AuthenticationPrincipal String userId,
                                        @PathVariable("teamOriginKey") String teamOriginKey){
         try {
-            teamService.deleteTeamUser(teamService.retrieveTeamEntity(teamOriginKey), UserDTO.builder().userId(userId).build());
+            teamService.deleteTeamUser(teamOriginKey, UserDTO.builder().userId(userId).build());
             return ResponseEntity.status(HttpStatus.OK).build();
         }catch (Exception e){
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
         }
     }
 
-    // 팀 삭제
+    @DeleteMapping("/{teamOriginKey}")// 팀 삭제
+    public ResponseEntity<?> deleteTeam(@AuthenticationPrincipal String userId,
+                                        @PathVariable("teamOriginKey") String teamOriginKey){
+
+        // Team founder 권한 check
+        if(!(teamService.isUserFounderOfTeam(userId,teamOriginKey)))
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).body(null);
+
+        // Promise Entity 삭제
+        // CalendarPermission 삭제
+        // TeamEntity 삭제
+        // Vote 삭제?
+        // Preference 삭제?
+        try {
+            promiseService.deletePromiseByTeamOriginKey(teamOriginKey);
+            calendarService.deleteCalendarPermission(teamOriginKey);
+            teamService.deleteTeam(teamOriginKey);
+
+            return ResponseEntity.status(HttpStatus.OK).build();
+        }catch (Exception e){
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
+        }
+    }
 }

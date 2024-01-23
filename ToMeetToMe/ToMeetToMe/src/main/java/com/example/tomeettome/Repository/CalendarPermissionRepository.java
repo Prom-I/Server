@@ -19,6 +19,8 @@ public interface CalendarPermissionRepository extends JpaRepository<CalendarPerm
     List<CalendarPermissionEntity> findByUserId(String userId); // CalendarPermission이 1개 이상일 수 있으므로 List 반환
     List<CalendarPermissionEntity> findByOwnerOriginKey(String ownerOriginKey);
     List<CalendarPermissionEntity> findByIcsFileName(String icsFileName);
+    void deleteAllByOwnerOriginKey(String teamOriginKey);
+
     //CalendarPermissionEntity findOne(Specification<CalendarPermissionEntity> spec);
 
     static Specification<CalendarPermissionEntity> findCalendarPermission(String ownerOriginkey, String userId) {

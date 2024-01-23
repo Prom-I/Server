@@ -8,6 +8,7 @@ import com.example.tomeettome.Model.PromiseEntity;
 import com.example.tomeettome.Repository.AppointmentBlockRepository;
 import com.example.tomeettome.Repository.CalendarPermissionRepository;
 import com.example.tomeettome.Repository.PromiseRepository;
+import com.example.tomeettome.Repository.TeamRepository;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -29,6 +30,7 @@ public class PromiseService {
     @Autowired PromiseRepository promiseRepository;
     @Autowired AppointmentBlockRepository appointmentBlockRepository;
     @Autowired CalendarPermissionRepository calendarPermissionRepository;
+    @Autowired TeamRepository teamRepository;
 
     public PromiseEntity create(PromiseEntity promise) {
         return promiseRepository.save(promise);
@@ -118,5 +120,9 @@ public class PromiseService {
 
     public void deletePromise(String promiseUid) {
         promiseRepository.delete(promiseRepository.findById(promiseUid).get());
+    }
+
+    public void deletePromiseByTeamOriginKey(String teamOriginKey){
+        promiseRepository.deleteAllByIcsFileNameContaining(teamRepository.findByOriginKey(teamOriginKey).getName());
     }
 }

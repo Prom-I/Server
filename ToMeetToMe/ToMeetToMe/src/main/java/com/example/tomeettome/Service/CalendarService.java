@@ -134,11 +134,6 @@ public class CalendarService {
         return scheduleRepository.findByUid(entity.getUid());
     }
 
-    public ScheduleEntity delete(String uid) {
-        ScheduleEntity entity = scheduleRepository.findByUid(uid);
-        scheduleRepository.delete(entity);
-        return entity;
-    }
 
     // Status Toggle
     public ScheduleEntity confirm(String uid) {
@@ -167,5 +162,14 @@ public class CalendarService {
 
     private String generateTeamIcsFilename(String teamFounderId){
         return "TEAM"+teamFounderId+".ics";
+    }
+
+    public ScheduleEntity delete(String uid) {
+        ScheduleEntity entity = scheduleRepository.findByUid(uid);
+        scheduleRepository.delete(entity);
+        return entity;
+    }
+    public void deleteCalendarPermission(String teamOriginKey){
+        calendarPermissionRepository.deleteAllByOwnerOriginKey(teamOriginKey);
     }
 }

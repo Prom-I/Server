@@ -9,7 +9,7 @@ import java.util.List;
 public interface PromiseRepository extends JpaRepository<PromiseEntity, String> {
     List<PromiseEntity> findByIcsFileName(String icsFileName);
     List<PromiseEntity> findAll(Specification<PromiseEntity> spec);
-
+    void deleteAllByIcsFileNameContaining(String teamName);
     static Specification<PromiseEntity> getConfirmedPromise(String icsFileName) {
         return (root, query, builder) ->
             builder.and(builder.equal(root.get("icsFileName"), icsFileName),

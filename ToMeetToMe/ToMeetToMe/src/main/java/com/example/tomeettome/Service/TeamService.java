@@ -75,8 +75,8 @@ public class TeamService {
         return teamRepository.findByOriginKey(entity.getOriginKey());
     }
 
-    public void deleteTeamUser(TeamEntity entity, UserDTO userDTO) {
-        teamRepository.findOne(Example.of(entity)).ifPresent(
+    public void deleteTeamUser(String teamOriginKey, UserDTO userDTO) {
+        teamRepository.findOne(Example.of(teamRepository.findByOriginKey(teamOriginKey))).ifPresent(
                 teamEntity -> {
                     teamEntity.setNumOfUsers(teamEntity.getNumOfUsers()-1);
                 }
@@ -86,9 +86,13 @@ public class TeamService {
                 calendarPermissionRepository.findOne(
                         Example.of(CalendarPermissionEntity.builder()
                                         .userId(userDTO.getUserId())
-                                        .ownerOriginKey(entity.getOriginKey())
+                                        .ownerOriginKey(teamOriginKey)
                                 .build())
                 ).orElseThrow()
         );
+    }
+
+    public void deleteTeam(String teamOriginKey) {
+        teamRepository.deleteById(teamOriginKey);
     }
 }
