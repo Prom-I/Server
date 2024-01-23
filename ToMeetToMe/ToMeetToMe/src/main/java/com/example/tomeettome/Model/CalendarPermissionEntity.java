@@ -28,7 +28,7 @@ public class CalendarPermissionEntity {
     private String icsFileName;
     private String ownerOriginKey; // userUid 또는 teamUid, 캘린더의 소유자
     private String ownerType; // user 또는 team
-    private String permissionLevel; // 관리자(admin) 또는 읽기전용(ReadOnly)
+    private String permissionLevel; // 관리자(admin) 또는 Member or Guest
     private String userId; // 권한의 소유자
     @UpdateTimestamp
     private LocalDateTime lastModifiedAt;

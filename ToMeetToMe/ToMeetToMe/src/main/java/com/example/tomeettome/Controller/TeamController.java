@@ -99,7 +99,7 @@ public class TeamController {
     }
 
 
-    @PatchMapping("/update/{teamOriginKey}")
+    @PatchMapping("/{teamOriginKey}")
     public ResponseEntity<?> updateTeam(@AuthenticationPrincipal String userId,
                                         @PathVariable("teamOriginKey") String teamOriginKey,@RequestBody TeamDTO requestDTO){
         // Team 설립자 만 수정 권한 존재
@@ -110,7 +110,8 @@ public class TeamController {
             return ResponseEntity.status(HttpStatus.FORBIDDEN).body(null);
 
         try{
-            TeamEntity entity = teamService.updateTeam(teamOriginKey,TeamDTO.toEntity(requestDTO));
+            TeamEntity entity = teamService.updateTeam(teamOriginKey,TeamDTO.toEntity(requestDTO)); // throw EntityNotFoundException
+
             TeamDTO responseDTO = new TeamDTO(entity);
             responseDTO.setTeamUsers(teamService.retrieveTeamUsers(entity));
 
@@ -120,4 +121,32 @@ public class TeamController {
         }
     }
 
+    @PatchMapping("/removeMember/{teamOriginKey}") // 팀원 강퇴
+    public ResponseEntity<?> removeTeamMember(@AuthenticationPrincipal String userId,
+                                        @PathVariable("teamOriginKey") String teamOriginKey,@RequestBody UserDTO userDTO){
+
+        // Team founder 권한 check
+        if(!(teamService.isUserFounderOfTeam(userId,teamOriginKey)))
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).body(null);
+
+        try {
+            teamService.deleteTeamUser(teamService.retrieveTeamEntity(teamOriginKey), userDTO);
+            return ResponseEntity.status(HttpStatus.OK).build();
+        }catch (Exception e){
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
+        }
+    }
+
+    @PatchMapping("/leaveTeam/{teamOriginKey}") // 팀 탈퇴
+    public ResponseEntity<?> leaveTeam(@AuthenticationPrincipal String userId,
+                                       @PathVariable("teamOriginKey") String teamOriginKey){
+        try {
+            teamService.deleteTeamUser(teamService.retrieveTeamEntity(teamOriginKey), UserDTO.builder().userId(userId).build());
+            return ResponseEntity.status(HttpStatus.OK).build();
+        }catch (Exception e){
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
+        }
+    }
+
+    // 팀 삭제
 }

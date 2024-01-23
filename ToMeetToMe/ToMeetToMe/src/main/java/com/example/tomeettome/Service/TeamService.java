@@ -1,6 +1,7 @@
 package com.example.tomeettome.Service;
 
 import com.example.tomeettome.Constant.OWNERTYPE;
+import com.example.tomeettome.DTO.UserDTO;
 import com.example.tomeettome.Model.CalendarPermissionEntity;
 import com.example.tomeettome.Model.TeamEntity;
 import com.example.tomeettome.Repository.CalendarPermissionRepository;
@@ -72,5 +73,22 @@ public class TeamService {
                 () -> {throw new EntityNotFoundException();} // Runnable (값이 존재하지 않을 때 or Else)
         );
         return teamRepository.findByOriginKey(entity.getOriginKey());
+    }
+
+    public void deleteTeamUser(TeamEntity entity, UserDTO userDTO) {
+        teamRepository.findOne(Example.of(entity)).ifPresent(
+                teamEntity -> {
+                    teamEntity.setNumOfUsers(teamEntity.getNumOfUsers()-1);
+                }
+        );
+
+        calendarPermissionRepository.delete(
+                calendarPermissionRepository.findOne(
+                        Example.of(CalendarPermissionEntity.builder()
+                                        .userId(userDTO.getUserId())
+                                        .ownerOriginKey(entity.getOriginKey())
+                                .build())
+                ).orElseThrow()
+        );
     }
 }
