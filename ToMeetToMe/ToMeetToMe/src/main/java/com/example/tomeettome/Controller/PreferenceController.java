@@ -1,5 +1,6 @@
 package com.example.tomeettome.Controller;
 
+import com.example.tomeettome.Constant.STATUS;
 import com.example.tomeettome.DTO.BlockDTO;
 import com.example.tomeettome.DTO.CaldavDTO;
 import com.example.tomeettome.Model.AppointmentBlockEntity;
@@ -53,9 +54,7 @@ public class PreferenceController {
     public ResponseEntity<String> create(@AuthenticationPrincipal String userId,
                                     @PathVariable("icsFileName") String icsFileName,
                                     @RequestBody String component) throws ParserException, IOException, ParseException, URISyntaxException {
-        HttpHeaders headers = new HttpHeaders();
-        headers.setContentType(MediaType.parseMediaType("text/calendar"));
-        headers.add("Content-Disposition", "attachment; filename=calendar.ics");
+        HttpHeaders headers = makeCaldavHeader();
 
         CaldavDTO dto = new CaldavDTO(component);
         PreferenceEntity preference = dto.toPreferenceEntity(dto);
@@ -70,7 +69,7 @@ public class PreferenceController {
         // Promise가 처음 만들어지는 것이므로 dtStart, dtEnd는 처음 설정한 scope로, time은 0시 0분으로
         PromiseEntity promise = PromiseEntity.builder()
                 .organizerId(userId)
-                .status("TENTATIVE")
+                .status(STATUS.TENTATIVE.name())
                 .icsFileName(icsFileName)
                 .dtStart(startDayScope.atTime(0,0))
                 .dtEnd(endDayScope.atTime(0,0))
@@ -83,7 +82,8 @@ public class PreferenceController {
 
         CaldavDTO.Precondition precondition = new CaldavDTO.Precondition(preferredDays,startScope,endScope,duration, promise.getUid());
 
-        return ResponseEntity.ok().headers(headers).body(CaldavDTO.setPreferenceValue(preferenceService.create(preference, icsFileName,precondition), promise));
+        return ResponseEntity.status(HttpStatus.OK).headers(headers).body(CaldavDTO.setPreferenceValue
+                (preferenceService.create(icsFileName, precondition), promise));
     }
 
     // 팀을 누르면 팀에서 만들어진 약속들을 보내주는 API
@@ -96,7 +96,7 @@ public class PreferenceController {
 
         List<PromiseEntity> promises = promiseService.retrieve(icsFileName);
 
-        return ResponseEntity.ok().headers(headers).body(CaldavDTO.setPromiseValue(promises));
+        return ResponseEntity.status(HttpStatus.OK).headers(headers).body(CaldavDTO.setPromiseValue(promises));
     }
 
     // Appointment Block을 보내주는 API
@@ -105,19 +105,17 @@ public class PreferenceController {
             List<AppointmentBlockEntity> blocks = promiseService.retrieveAppointmentBlocks(promiseUid);
             List<BlockDTO> blocksDTO = blocks.stream().map(BlockDTO::new).collect(Collectors.toList());
 
-            return ResponseEntity.ok().body(blocksDTO);
+            return ResponseEntity.status(HttpStatus.OK).body(blocksDTO);
     }
 
     // 약속 추천된 거 3개 + 투표 현황 보내주는 API
     @GetMapping("/retrieve/vote/{promiseUid}")
     public ResponseEntity<String> retrievePreferences(@PathVariable("promiseUid") String promiseUid) throws ParseException, URISyntaxException, IOException {
-        HttpHeaders headers = new HttpHeaders();
-        headers.setContentType(MediaType.parseMediaType("text/calendar"));
-        headers.add("Content-Disposition", "attachment; filename=calendar.ics");
+        HttpHeaders headers = makeCaldavHeader();
 
         List<PreferenceEntity> preferences = preferenceService.retrieve(promiseUid);
         PromiseEntity promise = promiseService.findByPromiseUid(promiseUid);
-        return ResponseEntity.ok().headers(headers).body(CaldavDTO.setPreferenceValue(preferences, promise));
+        return ResponseEntity.status(HttpStatus.OK).headers(headers).body(CaldavDTO.setPreferenceValue(preferences, promise));
     }
 
     // 약속 확정 API
@@ -143,17 +141,27 @@ public class PreferenceController {
                 notificationService.makeMessagesByToken(
                         notificationService.makeModifyOrConfirmPromiseNotiDTOList(teamIcsFileName, result)));
 
-        return ResponseEntity.ok().body(CaldavDTO.setPromiseValue(Collections.singletonList(promise)));
+        return ResponseEntity.status(HttpStatus.OK).body(CaldavDTO.setPromiseValue(Collections.singletonList(promise)));
     }
 
     // 약속 갱신 API
     // preference 삭제
     // appointment block 삭제
     // vote 삭제
+    // refresh 하려면 preferredDays 정보가 있어야 하는데, DB에 저장을 안함 ...
 //    @GetMapping("/refresh/{icsFileName}/{promiseUid}")
 //    public ResponseEntity<?> refresh(@PathVariable("icsFileName") String icsFileName,
-//                                     @PathVariable("promiseUid") String promiseUid) {
+//                                     @PathVariable("promiseUid") String promiseUid,
+//                                     @RequestBody String component) throws IOException, ParseException, URISyntaxException {
+//        cleanupPromiseData(promiseUid);
+//        HttpHeaders headers = makeCaldavHeader();
 //
+//        PromiseEntity promise = promiseService.findByPromiseUid(promiseUid);
+//
+//        CaldavDTO.Precondition precondition = new CaldavDTO.Precondition(preferredDays,startScope,endScope,duration, promise.getUid());
+//
+//        return ResponseEntity.status(HttpStatus.OK).headers(headers).body(CaldavDTO.setPreferenceValue
+//                (preferenceService.create(icsFileName, precondition), promise));
 //    }
 
     // 약속 삭제 API
@@ -164,9 +172,7 @@ public class PreferenceController {
     @DeleteMapping("/{promiseUid}")
     public ResponseEntity<?> deletePromise(@PathVariable("promiseUid") String promiseUid) {
         preferenceService.deletePreferences(promiseUid);
-        preferenceService.deleteAppointmentBlocks(promiseUid);
-        voteService.deleteVotes(promiseUid);
-        promiseService.deletePromise(promiseUid);
+        cleanupPromiseData(promiseUid);
         return ResponseEntity.status(HttpStatus.NO_CONTENT).body(null);
     }
 
@@ -191,6 +197,20 @@ public class PreferenceController {
 
         }
     }
+
+    private void cleanupPromiseData(String promiseUid) {
+        preferenceService.deleteAppointmentBlocks(promiseUid);
+        voteService.deleteVotes(promiseUid);
+        promiseService.deletePromise(promiseUid);
+    }
+
+    private HttpHeaders makeCaldavHeader() {
+        HttpHeaders headers = new HttpHeaders();
+        headers.setContentType(MediaType.parseMediaType("text/calendar"));
+        headers.add("Content-Disposition", "attachment; filename=calendar.ics");
+        return headers;
+    }
+
 }
 
 
