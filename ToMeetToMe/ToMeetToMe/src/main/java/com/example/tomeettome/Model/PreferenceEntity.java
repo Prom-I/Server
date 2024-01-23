@@ -28,11 +28,6 @@ public class PreferenceEntity {
     @GenericGenerator(name="system-uuid", strategy="uuid")
     private String uid;
 
-//    // 이 3개는 Promise 테이블로 옮김
-//    private String teamOriginKey;
-//    private String organizerId;
-//    private String status;
-
     private String promiseUid;
 
     private LocalDateTime dtStart; // 날짜지만 시간을 00시-2359로 표기

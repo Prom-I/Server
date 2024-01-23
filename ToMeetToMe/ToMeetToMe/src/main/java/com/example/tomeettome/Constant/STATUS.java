@@ -1,2 +1,5 @@
-package com.example.tomeettome.Constant;public enum STATUS {
+package com.example.tomeettome.Constant;
+
+public enum STATUS {
+    CONFIRMED, TENTATIVE, CANCELLED
 }
