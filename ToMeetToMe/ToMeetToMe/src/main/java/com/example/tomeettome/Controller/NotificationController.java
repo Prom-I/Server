@@ -15,17 +15,12 @@ import org.springframework.web.bind.annotation.RestController;
 @RequestMapping("/notification")
 public class NotificationController {
     @Autowired NotificationService notificationService;
-            
-    //FCM token 저장하는 API 필요함
 
-    //
     @PostMapping
     public ResponseEntity<?> sendNotificationByToken(@RequestBody NotificationDTO dto) {
         log.info("controller enter");
         notificationService.sendNotificaton(notificationService.makeMessageByToken(dto));
         return ResponseEntity.ok().body(null);
     }
-
-
 
 }

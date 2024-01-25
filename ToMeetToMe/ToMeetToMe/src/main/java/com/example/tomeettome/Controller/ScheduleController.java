@@ -1,9 +1,11 @@
 package com.example.tomeettome.Controller;
 
+import com.example.tomeettome.Constant.ERRORMSG;
 import com.example.tomeettome.DTO.*;
 import com.example.tomeettome.Model.ScheduleEntity;
 import com.example.tomeettome.Service.CalendarService;
 import com.example.tomeettome.Service.CategoryService;
+import com.example.tomeettome.Service.PreferenceService;
 import com.example.tomeettome.Service.PromiseService;
 import lombok.extern.slf4j.Slf4j;
 import net.fortuna.ical4j.data.ParserException;
@@ -55,7 +57,7 @@ public class ScheduleController {
 
             return ResponseEntity.status(HttpStatus.CREATED).body(null);
         } catch (NullPointerException e) {
-            return ResponseEntity.badRequest().body(e.getMessage());
+            return ResponseEntity.badRequest().body(ERRORMSG.NullPointerException.name());
         }
     }
 
@@ -95,16 +97,42 @@ public class ScheduleController {
     @PatchMapping("/confirm/{icsFileName}/{scheduleUid}")
     public ResponseEntity<?> confirm(@PathVariable("icsFileName") String icsFileName,
                                       @PathVariable("scheduleUid") String uid) {
-        calendarService.confirm(uid);
-        return ResponseEntity.status(HttpStatus.NO_CONTENT).body(null);
+        if(calendarService.confirm(uid) != null) {
+            if(calendarService.validatePermissionByScheduleUid(icsFileName, uid)) {
+                return ResponseEntity.status(HttpStatus.NO_CONTENT).body(null);
+            }
+            else return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(ERRORMSG.Permission_Denied.name());
+
+        }
+        else {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(ERRORMSG.NullPointerException.name());
+        }
     }
 
-    @GetMapping("/retrieve")
-    public String retrieve(@AuthenticationPrincipal String userId) throws ParseException, URISyntaxException {
-        StringBuilder sb = new StringBuilder();
-        sb.append(CaldavDTO.setScheduleValue(calendarService.retrieveOnlyUser("yourUserId1")));
-        sb.append(CaldavDTO.setPromiseValue(promiseService.retrieveOnlyConfirmedPromises("yourUserId1")));
-        return sb.toString();
+    @GetMapping("/retrieve/{icsFileName}")
+    public String retrieve(@AuthenticationPrincipal String userId,
+            @PathVariable("icsFileName") String icsFileName) throws ParseException, URISyntaxException {
+        try {
+            String target = PreferenceService.getUserIdFromIcsFileName(icsFileName);
+            boolean result = calendarService.validatePermission(userId, icsFileName);
+            if (result) {
+                StringBuilder sb = new StringBuilder();
+                sb.append(CaldavDTO.setScheduleValue(calendarService.retrieveOnlyTarget(target)) != null ?
+                        CaldavDTO.setScheduleValue(calendarService.retrieveOnlyTarget(target)) : "");
+
+                sb.append(CaldavDTO.setPromiseValue(promiseService.retrieveOnlyConfirmedPromises(target)) != null ?
+                        CaldavDTO.setPromiseValue(promiseService.retrieveOnlyConfirmedPromises(target)) : "");
+
+                return sb.toString();
+            }
+            else {
+                return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(ERRORMSG.Permission_Denied.name()).toString();
+            }
+        }
+        catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(e).toString();
+        }
+
 
     }
 
