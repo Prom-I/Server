@@ -6,9 +6,6 @@ import com.example.tomeettome.DTO.TeamDTO;
 import com.example.tomeettome.Model.*;
 import com.example.tomeettome.Repository.*;
 import lombok.extern.slf4j.Slf4j;
-import net.fortuna.ical4j.model.Content;
-import net.fortuna.ical4j.model.Property;
-import net.fortuna.ical4j.model.property.Attendee;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
@@ -90,20 +87,40 @@ public class CalendarService {
         return scheduleRepository.save(schedule);
     }
 
-    public List<ScheduleEntity> retrieveOnlyUser(String userId) {
-        List<CalendarPermissionEntity> calendarPermissionEntities = calendarPermissionRepository.findByUserId(userId);
-        CalendarPermissionEntity permission = new CalendarPermissionEntity();
+    public List<ScheduleEntity> retrieveOnlyTarget(String userId) {
+        try {
+            List<CalendarPermissionEntity> calendarPermissionEntities = calendarPermissionRepository.findByUserId(userId);
 
-        // CalendarPermission 중에 user 개인의 Calendar를 찾기 위해
-        for (CalendarPermissionEntity p : calendarPermissionEntities) {
-            if (p.getOwnerType().equals(OWNERTYPE.USER)) {
-                permission = p;
+            // 개인 일정 : Owner type이 USER이고, permission level이 ADMIN
+            for (CalendarPermissionEntity p : calendarPermissionEntities) {
+                if (p.getOwnerType().equals(OWNERTYPE.USER.name()) &&
+                        p.getPermissionLevel().equals(PERMISSIONLEVEL.ADMIN.name())) {
+                    return scheduleRepository.findByIcsFileName(p.getIcsFileName());
+                }
             }
+            return null;
         }
-        // user 개인의 Calendar를 찾음
-        CalendarEntity calendar = calendarRepository.findByIcsFileName(permission.getIcsFileName());
-        // schedule List
-        return scheduleRepository.findByIcsFileName(calendar.getIcsFileName());
+        catch (NullPointerException e) {
+            throw e;
+        }
+    }
+
+    public List<ScheduleEntity> retrieveOnlyFollowing(String userId) {
+        try {
+            List<CalendarPermissionEntity> calendarPermissionEntities = calendarPermissionRepository.findByUserId(userId);
+
+            // 팔로잉 일정 : Owner type이 USER이고, permission level이 MEMBER
+            for (CalendarPermissionEntity p : calendarPermissionEntities) {
+                if (p.getOwnerType().equals(OWNERTYPE.USER.name()) &&
+                        p.getPermissionLevel().equals(PERMISSIONLEVEL.MEMBER.name())) {
+                    return scheduleRepository.findByIcsFileName(p.getIcsFileName());
+                }
+            }
+            return null;
+        }
+        catch (NullPointerException e) {
+            throw e;
+        }
     }
 
 //    public List<ScheduleEntity> retrieveByDateRange(String userId, LocalDate dtStart, LocalDate dtEnd) {
@@ -137,14 +154,20 @@ public class CalendarService {
 
     // Status Toggle
     public ScheduleEntity confirm(String uid) {
-        ScheduleEntity entity = scheduleRepository.findByUid(uid);
-        if (entity.getStatus().equals("TENTATIVE")) {
-            entity.setStatus("CONFIRMED");
+        try {
+            ScheduleEntity entity = scheduleRepository.findByUid(uid);
+
+            if (entity.getStatus().equals("TENTATIVE")) {
+                entity.setStatus("CONFIRMED");
+            }
+            else if (entity.getStatus().equals("CONFIRMED")) {
+                entity.setStatus("TENTATIVE");
+            }
+            return scheduleRepository.findByUid(entity.getUid());
         }
-        else if (entity.getStatus().equals("CONFIRMED")) {
-            entity.setStatus("TENTATIVE");
+        catch (Exception e) {
+            return null;
         }
-        return scheduleRepository.findByUid(entity.getUid());
     }
 
     public CalendarPermissionEntity addNewTeamUser(TeamEntity teamEntity, String inviteeId) {
@@ -169,7 +192,31 @@ public class CalendarService {
         scheduleRepository.delete(entity);
         return entity;
     }
+
     public void deleteCalendarPermission(String teamOriginKey){
         calendarPermissionRepository.deleteAllByOwnerOriginKey(teamOriginKey);
     }
+
+    public boolean validatePermission(String userId, String targetIcsFileName) {
+        try {
+            List<CalendarPermissionEntity> calendarPermissionEntities = calendarPermissionRepository.findByUserId(userId);
+
+            // target icsFile의 Permission을 user가 갖고있는지 확인
+            for (CalendarPermissionEntity p : calendarPermissionEntities) {
+                if (p.getIcsFileName().equals(targetIcsFileName) &&
+                        p.getPermissionLevel().equals(PERMISSIONLEVEL.MEMBER.name())) {
+                    return true;
+                }
+            }
+            return false;
+        }
+        catch (NullPointerException e) {
+            throw e;
+        }
+    }
+
+    public boolean validatePermissionByScheduleUid(String icsFileName, String uid) {
+        return scheduleRepository.findByUid(uid).getIcsFileName().equals(icsFileName);
+    }
+
 }
