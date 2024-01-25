@@ -199,22 +199,25 @@ public class CaldavDTO {
     public static String setScheduleValue(List<ScheduleEntity> sList) throws ParseException {
         Calendar calendar = new Calendar();
 
-        for (ScheduleEntity s : sList) {
-            VEvent vEvent = new VEvent();
-            vEvent.getProperties().add(new Uid(s.getUid()));
-            vEvent.getProperties().add(new Summary(s.getSummary()));
-            vEvent.getProperties().add(new Description(s.getDescription() != null ? s.getDescription() : ""));
-            vEvent.getProperties().add(new DtStart(s.getDtStart().toInstant().atZone(ZoneOffset.UTC).format(DateTimeFormatter.ofPattern("yyyyMMdd'T'HHmmss'Z'"))));
-            vEvent.getProperties().add(new DtStart(s.getDtEnd().toInstant().atZone(ZoneOffset.UTC).format(DateTimeFormatter.ofPattern("yyyyMMdd'T'HHmmss'Z'"))));
-            vEvent.getProperties().add(new Location(s.getLocation() != null ? s.getDescription() : ""));
-            vEvent.getProperties().add(new Status(s.getStatus()));
-            vEvent.getProperties().add(new XProperty(Property.EXPERIMENTAL_PREFIX + "ICSFILENAME", s.getIcsFileName()));
-            vEvent.getProperties().add(new XProperty(Property.EXPERIMENTAL_PREFIX + "CATEGORYUID", s.getCategoryUid()));
-            vEvent.getProperties().add(new XProperty(Property.EXPERIMENTAL_PREFIX + "ALLDAY", s.getAllDay()));
+        if (sList != null) {
+            for (ScheduleEntity s : sList) {
+                VEvent vEvent = new VEvent();
+                vEvent.getProperties().add(new Uid(s.getUid()));
+                vEvent.getProperties().add(new Summary(s.getSummary()));
+                vEvent.getProperties().add(new Description(s.getDescription() != null ? s.getDescription() : ""));
+                vEvent.getProperties().add(new DtStart(s.getDtStart().toInstant().atZone(ZoneOffset.UTC).format(DateTimeFormatter.ofPattern("yyyyMMdd'T'HHmmss'Z'"))));
+                vEvent.getProperties().add(new DtStart(s.getDtEnd().toInstant().atZone(ZoneOffset.UTC).format(DateTimeFormatter.ofPattern("yyyyMMdd'T'HHmmss'Z'"))));
+                vEvent.getProperties().add(new Location(s.getLocation() != null ? s.getDescription() : ""));
+                vEvent.getProperties().add(new Status(s.getStatus()));
+                vEvent.getProperties().add(new XProperty(Property.EXPERIMENTAL_PREFIX + "ICSFILENAME", s.getIcsFileName()));
+                vEvent.getProperties().add(new XProperty(Property.EXPERIMENTAL_PREFIX + "CATEGORYUID", s.getCategoryUid()));
+                vEvent.getProperties().add(new XProperty(Property.EXPERIMENTAL_PREFIX + "ALLDAY", s.getAllDay()));
 
-            calendar.getComponents().add(vEvent);
+                calendar.getComponents().add(vEvent);
+            }
+            return calendar.toString();
         }
-        return calendar.toString();
+        else return null;
     }
 
     public static class Precondition {
