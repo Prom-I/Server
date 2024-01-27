@@ -61,9 +61,8 @@ public class ScheduleController {
         }
     }
 
-    @PutMapping("/update/{icsFileName}")
-    public ResponseEntity<?> update(@PathVariable("icsFileName") String icsFileName,
-                                    @RequestBody String calendarString) throws ParserException, IOException {
+    @PutMapping("/update")
+    public ResponseEntity<?> update(@RequestBody String calendarString) throws ParserException, IOException {
         try {
             CaldavDTO dto = new CaldavDTO(calendarString);
             ScheduleEntity entity = dto.toScheduleEntity(dto);
@@ -73,24 +72,18 @@ public class ScheduleController {
 
             return ResponseEntity.status(HttpStatus.NO_CONTENT).body(null);
         } catch (NullPointerException e) {
-            return ResponseEntity.badRequest().body(null);
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(e.getMessage());
         }
     }
 
-    @PutMapping("/delete/{icsFileName}/{scheduleUid}")
-    public ResponseEntity<?> delete(@PathVariable("icsFileName") String icsFileName,
-                                    @PathVariable("scheduleUid") String uid) {
+    @PutMapping("/delete/{scheduleUid}")
+    public ResponseEntity<?> delete(@PathVariable("scheduleUid") String uid) {
         try {
-            ScheduleEntity entity = calendarService.delete(uid);
-
-            ResponseDTO response = ResponseDTO.<ScheduleEntity>builder().data(Collections.singletonList(entity)).status("succeed").build();
-
-            return ResponseEntity.status(HttpStatus.NO_CONTENT).body(response);
+            calendarService.delete(uid);
+            return ResponseEntity.status(HttpStatus.NO_CONTENT).body(null);
 
         } catch (Exception e) {
-            String error = e.getMessage();
-            ResponseDTO response = ResponseDTO.<ScheduleEntity>builder().error(error).build();
-            return ResponseEntity.badRequest().body(response);
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(e.getMessage());
         }
     }
 
@@ -102,7 +95,6 @@ public class ScheduleController {
                 return ResponseEntity.status(HttpStatus.NO_CONTENT).body(null);
             }
             else return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(ERRORMSG.Permission_Denied.name());
-
         }
         else {
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(ERRORMSG.NullPointerException.name());
