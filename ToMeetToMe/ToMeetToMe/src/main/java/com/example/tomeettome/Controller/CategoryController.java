@@ -25,33 +25,49 @@ public class CategoryController {
     @PostMapping("/create/{icsFileName}")
     public ResponseEntity<?> create(@PathVariable("icsFileName") String icsFileName,
                                     @RequestBody CategoryDTO dto) {
-        CategoryEntity category = dto.toEntity(dto);
-        category.setIcsFileName(icsFileName);
-        category = categoryService.create(category);
+        try {
+            CategoryEntity category = dto.toEntity(dto);
+            category.setIcsFileName(icsFileName);
+            category = categoryService.create(category);
 
-        CategoryDTO categoryDTO = CategoryDTO.builder()
-                .icsFileName(category.getIcsFileName())
-                .color(category.getColor())
-                .name(category.getName())
-                .scope(category.getScope())
-                .build();
-        ResponseDTO<CategoryDTO> response = ResponseDTO.<CategoryDTO>builder().data(Collections.singletonList(categoryDTO)).status("success").build();
-        return ResponseEntity.status(HttpStatus.CREATED).body(response);
+            CategoryDTO categoryDTO = CategoryDTO.builder()
+                    .icsFileName(category.getIcsFileName())
+                    .color(category.getColor())
+                    .name(category.getName())
+                    .scope(category.getScope())
+                    .build();
+            ResponseDTO<CategoryDTO> response = ResponseDTO.<CategoryDTO>builder().data(Collections.singletonList(categoryDTO)).status("success").build();
+            return ResponseEntity.status(HttpStatus.CREATED).body(response);
+        }
+        catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(e.getMessage());
+        }
+
     }
 
     @GetMapping("/retrieve/{icsFileName}")
     public ResponseEntity<?> retrieve(@PathVariable("icsFileName") String icsFileName) {
-        List<CategoryEntity> categories = categoryService.retrieve(icsFileName);
-        List<CategoryDTO> categoriesDTO = categories.stream().map(CategoryDTO::new).collect(Collectors.toList());
+        try {
+            List<CategoryEntity> categories = categoryService.retrieve(icsFileName);
+            List<CategoryDTO> categoriesDTO = categories.stream().map(CategoryDTO::new).collect(Collectors.toList());
 
-        ResponseDTO<CategoryDTO> response = ResponseDTO.<CategoryDTO>builder().data(categoriesDTO).status("success").build();
-        return ResponseEntity.status(HttpStatus.OK).body(response);
+            ResponseDTO<CategoryDTO> response = ResponseDTO.<CategoryDTO>builder().data(categoriesDTO).status("success").build();
+            return ResponseEntity.status(HttpStatus.OK).body(response);
+        }
+        catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(e.getMessage());
+        }
     }
 
     @GetMapping("/retrieve/schedules/{categoryUid}")
     public ResponseEntity<?> retrieveSchedules(@PathVariable("categoryUid") String categoryUid) throws ParseException {
-        List<ScheduleEntity> schedules = categoryService.retrieveSchedules(categoryUid);
-        return ResponseEntity.status(HttpStatus.OK).body(CaldavDTO.setScheduleValue(schedules));
+        try {
+            List<ScheduleEntity> schedules = categoryService.retrieveSchedules(categoryUid);
+            return ResponseEntity.status(HttpStatus.OK).body(CaldavDTO.setScheduleValue(schedules));
+        }
+        catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(e.getMessage());
+        }
     }
 
     @PatchMapping("/update/{icsFileName}")
@@ -74,7 +90,7 @@ public class CategoryController {
             return ResponseEntity.status(HttpStatus.OK).body(response);
         }
         catch (NullPointerException e) {
-            return ResponseEntity.badRequest().body(null);
+            return ResponseEntity.badRequest().body(e.getMessage());
         }
     }
 
@@ -82,13 +98,10 @@ public class CategoryController {
     public ResponseEntity<?> delete(@PathVariable("categoryUid") String uid) {
         try {
             categoryService.delete(uid);
-
             return ResponseEntity.status(HttpStatus.NO_CONTENT).body(null);
 
         } catch (Exception e) {
-            String error = e.getMessage();
-            ResponseDTO response = ResponseDTO.<ScheduleEntity>builder().error(error).build();
-            return ResponseEntity.badRequest().body(response);
+            return ResponseEntity.badRequest().body(e.getMessage());
         }
     }
 }
