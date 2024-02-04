@@ -21,7 +21,7 @@ public class VoteEntity {
     @Id
     @GeneratedValue(generator = "system-uuid")
     @GenericGenerator(name = "system-uuid", strategy = "uuid")
-    private String originKey;
+    private String uid;
     private String userUid;
     private String preferenceUid;
 
