@@ -2,6 +2,7 @@ package com.example.tomeettome.Controller;
 
 import com.example.tomeettome.Constant.ERRORMSG;
 import com.example.tomeettome.DTO.*;
+import com.example.tomeettome.Model.PreferenceEntity;
 import com.example.tomeettome.Model.ScheduleEntity;
 import com.example.tomeettome.Service.CalendarService;
 import com.example.tomeettome.Service.CategoryService;
@@ -10,6 +11,7 @@ import com.example.tomeettome.Service.PromiseService;
 import lombok.extern.slf4j.Slf4j;
 import net.fortuna.ical4j.data.ParserException;
 import net.fortuna.ical4j.model.Property;
+import org.checkerframework.checker.units.qual.C;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -87,11 +89,15 @@ public class ScheduleController {
         }
     }
 
-    @PatchMapping("/confirm/{icsFileName}/{scheduleUid}")
+    @PatchMapping("/confirm/{icsFileName}")
     public ResponseEntity<?> confirm(@PathVariable("icsFileName") String icsFileName,
-                                      @PathVariable("scheduleUid") String uid) {
+                                      @RequestBody String component) throws ParserException, IOException {
+
+        PreferenceEntity pre = CaldavDTO.toPreferenceEntity(new CaldavDTO(component));
+        String uid = pre.getUid();
         if(calendarService.confirm(uid) != null) {
             if(calendarService.validatePermissionByScheduleUid(icsFileName, uid)) {
+
                 return ResponseEntity.status(HttpStatus.NO_CONTENT).body(null);
             }
             else return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(ERRORMSG.Permission_Denied.name());
