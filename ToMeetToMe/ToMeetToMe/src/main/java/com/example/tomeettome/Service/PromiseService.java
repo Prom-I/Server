@@ -51,7 +51,6 @@ public class PromiseService {
                 promise.addAll(promiseRepository.findAll(spec));
             }
         }
-
         return promise;
     }
 
