@@ -1,5 +1,6 @@
 package com.example.tomeettome.Controller;
 
+import com.example.tomeettome.Constant.ERRORMSG;
 import com.example.tomeettome.DTO.*;
 import com.example.tomeettome.DTO.Apple.AppleKeyDTO;
 import com.example.tomeettome.Model.CalendarEntity;
@@ -26,6 +27,7 @@ import java.net.URLDecoder;
 import java.nio.charset.StandardCharsets;
 import java.security.GeneralSecurityException;
 import java.text.ParseException;
+import java.time.LocalDateTime;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -47,7 +49,7 @@ public class UserController {
         // userId로 User 찾아서 Fcm token 저장하기
         Boolean result = userService.saveFcmToken(userId,dto.getToken());
         if (result) return ResponseEntity.status(HttpStatus.OK).body(null);
-        else return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(null);
+        else return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(ERRORMSG.NullPointerException.name());
     }
 
     @PostMapping("/authentication")
@@ -157,53 +159,75 @@ public class UserController {
 
     @GetMapping("/retrieve/{pattern}")
     public ResponseEntity<?> retrieve(@PathVariable("pattern") String pattern) throws UnsupportedEncodingException {
-        String decodedPattern = URLDecoder.decode(pattern, StandardCharsets.UTF_8);
+        try {
+            String decodedPattern = URLDecoder.decode(pattern, StandardCharsets.UTF_8);
 
-        List<UserEntity> users = userService.retrieve(decodedPattern);
-        List<UserDTO> usersDTO = users.stream().map(UserDTO::new).collect(Collectors.toList());
+            List<UserEntity> users = userService.retrieve(decodedPattern);
+            List<UserDTO> usersDTO = users.stream().map(UserDTO::new).collect(Collectors.toList());
 
-        ResponseDTO<UserDTO> response = ResponseDTO.<UserDTO>builder().data(usersDTO).status("success").build();
-        return ResponseEntity.status(HttpStatus.OK).body(response);
+            ResponseDTO<UserDTO> response = ResponseDTO.<UserDTO>builder().data(usersDTO).status("success").build();
+            return ResponseEntity.status(HttpStatus.OK).body(response);
+        }
+        catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(e.getMessage());
+        }
     }
 
     @GetMapping("/retrieve/follow")
     public ResponseEntity<?> retrieveFollowings(@AuthenticationPrincipal String userId) {
-        List<UserEntity> users = userService.retrieveFollowings(userId);
-        return ResponseEntity.status(HttpStatus.OK).body(users);
+        try {
+            List<UserEntity> users = userService.retrieveFollowings(userId);
+            return ResponseEntity.status(HttpStatus.OK).body(users);
+        }
+        catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(e.getMessage());
+        }
     }
 
     @GetMapping("/retrieve/profile")
     public ResponseEntity<?> retrieveProfile(@AuthenticationPrincipal String userId) {
-        UserEntity user = userService.retrieveProfile(userId);
-        UserDTO dto = UserDTO.builder()
-                .userId(user.getUserId())
-                .userName(user.getUserName())
-                .image(user.getImage())
-                .platform(user.getPlatform())
-                .build();
-        ResponseDTO<UserDTO> response = ResponseDTO.<UserDTO>builder().data(Collections.singletonList(dto)).status("success").build();
-        return ResponseEntity.status(HttpStatus.OK).body(response);
+        try {
+            UserEntity user = userService.retrieveProfile(userId);
+            UserDTO dto = UserDTO.builder()
+                    .userId(user.getUserId())
+                    .userName(user.getUserName())
+                    .image(user.getImage())
+                    .platform(user.getPlatform())
+                    .build();
+            ResponseDTO<UserDTO> response = ResponseDTO.<UserDTO>builder().data(Collections.singletonList(dto)).status("success").build();
+            return ResponseEntity.status(HttpStatus.OK).body(response);
+        }
+        catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(e.getMessage());
+        }
     }
 
     @PatchMapping("update/profile")
     public ResponseEntity<?> updateProfile(@AuthenticationPrincipal String userId,
                                                 @RequestBody UserDTO dto) {
-        UserEntity user = new UserEntity();
+        try {
+            UserEntity user = new UserEntity();
 
-        if (dto.getImage() != null)
-            user = userService.updateProfileImage(userId, dto.getImage());
+            if (dto.getImage() != null)
+                user = userService.updateProfileImage(userId, dto.getImage());
 
-        if(dto.getUserName() != null)
-            user = userService.updateProfileUserName(userId, dto.getUserName());
+            if(dto.getUserName() != null)
+                user = userService.updateProfileUserName(userId, dto.getUserName());
 
-        UserDTO userDTO = UserDTO.builder()
-                .userId(userId)
-                .userName(user.getUserName())
-                .image(user.getImage())
-                .platform(user.getPlatform())
-                .build();
-        ResponseDTO<UserDTO> response = ResponseDTO.<UserDTO>builder().data(Collections.singletonList(userDTO)).status("success").build();
-        return ResponseEntity.ok().body(response);
+            UserDTO userDTO = UserDTO.builder()
+                    .userId(userId)
+                    .userName(user.getUserName())
+                    .image(user.getImage())
+                    .platform(user.getPlatform())
+                    .lastModifiedAt(user.getLastModifiedAt())
+                    .createdAt(user.getCreatedAt())
+                    .build();
+            ResponseDTO<UserDTO> response = ResponseDTO.<UserDTO>builder().data(Collections.singletonList(userDTO)).status("success").build();
+            return ResponseEntity.status(HttpStatus.OK).body(response);
+        }
+        catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(e.getMessage());
+        }
     }
 
     // 친구 추가 요청 API
@@ -218,7 +242,7 @@ public class UserController {
             return ResponseEntity.ok().body(null);
         }
         catch (Exception e) {
-            return ResponseEntity.badRequest().body(e);
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(e.getMessage());
         }
     }
 
@@ -234,7 +258,7 @@ public class UserController {
             return ResponseEntity.status(HttpStatus.OK).body(null);
         }
         catch (Exception e) {
-            return ResponseEntity.badRequest().body(e);
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(e.getMessage());
         }
     }
 
@@ -246,10 +270,9 @@ public class UserController {
         try {
             userService.deleteCalenderPermission(userId, followingId);
             return ResponseEntity.status(HttpStatus.NO_CONTENT).body(null);
-
         }
         catch (Exception e) {
-            return ResponseEntity.badRequest().body(e);
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(e.getMessage());
         }
     }
 
