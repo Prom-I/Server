@@ -233,7 +233,7 @@ public class PreferenceController {
         }
     }
 
-    private void cleanupPromiseData(String promiseUid) {
+    public void cleanupPromiseData(String promiseUid) {
         preferenceService.deleteAppointmentBlocks(promiseUid);
         voteService.deleteVotes(promiseUid);
         promiseService.deletePromise(promiseUid);
