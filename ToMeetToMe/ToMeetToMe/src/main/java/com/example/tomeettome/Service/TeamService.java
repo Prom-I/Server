@@ -4,8 +4,10 @@ import com.example.tomeettome.Constant.OWNERTYPE;
 import com.example.tomeettome.DTO.UserDTO;
 import com.example.tomeettome.Model.CalendarPermissionEntity;
 import com.example.tomeettome.Model.TeamEntity;
+import com.example.tomeettome.Model.UserEntity;
 import com.example.tomeettome.Repository.CalendarPermissionRepository;
 import com.example.tomeettome.Repository.TeamRepository;
+import com.example.tomeettome.Repository.UserRepository;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Example;
@@ -19,6 +21,8 @@ import java.util.List;
 @Slf4j
 @Service
 public class TeamService {
+    @Autowired
+    private UserRepository userRepository;
 
     @Autowired TeamRepository teamRepository;
     @Autowired CalendarPermissionRepository calendarPermissionRepository;
@@ -29,40 +33,48 @@ public class TeamService {
 
     public boolean checkUserExistenceInTeam(TeamEntity teamEntity , String userId){
         Specification<CalendarPermissionEntity> spec =
-                CalendarPermissionRepository.findCalendarPermission(teamEntity.getOriginKey(),userId);
+                CalendarPermissionRepository.findCalendarPermission(teamEntity.getUid(),userId);
         // Return true if there is a value present, otherwise false.
         return calendarPermissionRepository.findOne(spec).isPresent();
     }
 
     public TeamEntity retrieveTeamEntity(String groupOriginKey) {
-        return teamRepository.findByOriginKey(groupOriginKey);
+        return teamRepository.findByUid(groupOriginKey);
     }
 
     public List<TeamEntity> retrieveTeamEntities(String userId) {
         List<TeamEntity> entities = new ArrayList<>();
-        List<String> teamOriginKeys = calendarPermissionRepository.findTeamOriginKeysByOwnerTypeAndUserId(OWNERTYPE.TEAM.name(),userId);
-        for(String teamOriginKey : teamOriginKeys){
-            entities.add(teamRepository.findByOriginKey(teamOriginKey));
-        }
 
+        Specification<CalendarPermissionEntity> spec = CalendarPermissionRepository.findTeamOriginKeysByOwnerTypeAndUserId(OWNERTYPE.TEAM.name(),userId);
+        List<CalendarPermissionEntity> permissions = calendarPermissionRepository.findAll(spec);
+        for(CalendarPermissionEntity p : permissions){
+            entities.add(teamRepository.findByUid(p.getOwnerOriginKey()));
+        }
         return entities;
     }
-    public List<String> retrieveTeamUsers(TeamEntity entity){
-        return calendarPermissionRepository.findUserIdsByTeamOriginKey(entity.getOriginKey());
+
+    public List<UserEntity> retrieveTeamUsers(String teamIcsFileName){
+        List<CalendarPermissionEntity> permissions = calendarPermissionRepository.findByIcsFileName(teamIcsFileName);
+
+        List<UserEntity> result = new ArrayList<>();
+        for (CalendarPermissionEntity p : permissions) {
+            result.add(userRepository.findByUserId(p.getUserId()));
+        }
+        return result;
     }
 
-    public void increaseNumOfUsers(String groupOriginKey) {
-        TeamEntity entity = teamRepository.findOne(Example.of(TeamEntity.builder().originKey(groupOriginKey).build())).orElseThrow();
+    public void increaseNumOfUsers(String teamUid) {
+        TeamEntity entity = teamRepository.findByUid(teamUid);
         entity.setNumOfUsers(entity.getNumOfUsers()+1);
         teamRepository.save(entity);
     }
 
     public Boolean isUserFounderOfTeam(String userId, String teamOriginKey) {
-        return teamRepository.findByOriginKey(teamOriginKey).getFounderId().equals(userId);
+        return teamRepository.findByUid(teamOriginKey).getFounderId().equals(userId);
     }
 
     public TeamEntity updateTeam(String teamOriginKey, final TeamEntity entity) {
-        teamRepository.findOne(Example.of(TeamEntity.builder().originKey(teamOriginKey).build())).ifPresentOrElse(
+        teamRepository.findOne(Example.of(TeamEntity.builder().uid(teamOriginKey).build())).ifPresentOrElse(
                 teamEntity -> {
                     teamEntity.setName(entity.getName() == null ? teamEntity.getName() : entity.getName());
                     teamEntity.setFounderId(entity.getFounderId() == null ? teamEntity.getFounderId() : entity.getFounderId());
@@ -72,27 +84,36 @@ public class TeamService {
                 } , // Consumer (값이 존재할때 ifPresnet)
                 () -> {throw new EntityNotFoundException();} // Runnable (값이 존재하지 않을 때 or Else)
         );
-        return teamRepository.findByOriginKey(entity.getOriginKey());
+        return teamRepository.findByUid(entity.getUid());
     }
+
 
     public void deleteTeamUser(String teamOriginKey, UserDTO userDTO) {
-        teamRepository.findOne(Example.of(teamRepository.findByOriginKey(teamOriginKey))).ifPresent(
-                teamEntity -> {
-                    teamEntity.setNumOfUsers(teamEntity.getNumOfUsers()-1);
-                }
-        );
+            teamRepository.findOne(Example.of(teamRepository.findByUid(teamOriginKey))).ifPresent(
+                    teamEntity -> {
+                        teamEntity.setNumOfUsers(teamEntity.getNumOfUsers()-1);
+                    }
+            );
 
-        calendarPermissionRepository.delete(
-                calendarPermissionRepository.findOne(
-                        Example.of(CalendarPermissionEntity.builder()
-                                        .userId(userDTO.getUserId())
-                                        .ownerOriginKey(teamOriginKey)
-                                .build())
-                ).orElseThrow()
-        );
+            calendarPermissionRepository.delete(
+                    calendarPermissionRepository.findOne(
+                            Example.of(CalendarPermissionEntity.builder()
+                                    .userId(userDTO.getUserId())
+                                    .ownerOriginKey(teamOriginKey)
+                                    .build())
+                    ).orElseThrow()
+            );
     }
 
-    public void deleteTeam(String teamOriginKey) {
-        teamRepository.deleteById(teamOriginKey);
+    public void deleteTeam(String teamUid) {
+        teamRepository.deleteById(teamUid);
     }
+
+    public boolean isTeamEmptyByIcsFileName(String teamIcsFileName) {
+        if(calendarPermissionRepository.findByIcsFileName(teamIcsFileName).isEmpty()) {
+            return true;
+        }
+        else return false;
+    }
+
 }

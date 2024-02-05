@@ -6,5 +6,5 @@ import org.springframework.stereotype.Repository;
 
 @Repository
 public interface TeamRepository extends JpaRepository<TeamEntity, String> {
-    TeamEntity findByOriginKey(String originKey);
+    TeamEntity findByUid(String originKey);
 }

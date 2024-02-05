@@ -34,7 +34,7 @@ public class TeamDTO {
     public static TeamEntity toEntity(final TeamDTO dto) {
         return TeamEntity.builder()
                 .name(dto.getName())
-                .founderId(dto.getFounderId())
+                //.founderId(dto.getFounderId())
                 .image(dto.getImage())
                 .numOfUsers(dto.teamUsers.length)
                 .build();
