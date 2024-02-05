@@ -21,17 +21,11 @@ import java.util.List;
 @Slf4j
 @Service
 public class NotificationService {
-    @Autowired
-    private TeamRepository teamRepository;
-    @Autowired
-    private CalendarPermissionRepository calendarPermissionRepository;
-
+    @Autowired private TeamRepository teamRepository;
+    @Autowired private CalendarPermissionRepository calendarPermissionRepository;
     @Autowired private FirebaseMessaging firebaseMessaging;
     @Autowired UserRepository userRepository;
-
     @Autowired TeamService teamService;
-
-
 
     public NotificationDTO makefollowNotiDTO(String followerId, String followingId) {
         UserEntity follower = userRepository.findByUserId(followerId);
@@ -71,7 +65,7 @@ public class NotificationService {
         }
 
         // 알림 body에 넣을 팀 이름 찾고
-        String teamName = teamRepository.findByOriginKey(permissions.get(0).getOwnerOriginKey()).getName();
+        String teamName = teamRepository.findByUid(permissions.get(0).getOwnerOriginKey()).getName();
 
         String title = "";
         String body = "";
@@ -151,7 +145,7 @@ public class NotificationService {
 
         for(String invitee : invitees){
 
-            if(!(teamService.checkUserExistenceInTeam(teamEntity,invitee))) // 이미 팀에 존재하는데 초대하는 지 확인하는 예외처리
+            if((teamService.checkUserExistenceInTeam(teamEntity,invitee))) // 이미 팀에 존재하는데 초대하는 지 확인하는 예외처리
                 continue;
 
             Notification notification = Notification.builder()
@@ -162,7 +156,7 @@ public class NotificationService {
             Message message = Message.builder()
                     .setToken(userRepository.findByUserId(invitee).getFcmToken())
                     .setNotification(notification)
-                    .putData("teamOriginKey",teamEntity.getOriginKey()) // 데이터 암호화?
+                    .putData("teamOriginKey",teamEntity.getUid()) // 데이터 암호화?
                     .build();
             messageList.add(message);
         }

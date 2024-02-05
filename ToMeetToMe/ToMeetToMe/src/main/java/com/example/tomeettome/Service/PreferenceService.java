@@ -140,7 +140,7 @@ public class PreferenceService {
         // 팀 ics 파일 이름으로 permission -> team 찾기
         // 이때 permission은 Team에 대한 팀원들의 permission
         List<CalendarPermissionEntity> permissions = calendarPermissionRepository.findByIcsFileName(icsFileName);
-        TeamEntity team = teamRepository.findByOriginKey(permissions.get(0).getOwnerOriginKey());
+        TeamEntity team = teamRepository.findByUid(permissions.get(0).getOwnerOriginKey());
 
         log.info(team.toString());
 
