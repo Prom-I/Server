@@ -11,6 +11,7 @@ import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
 import java.util.List;
+import java.util.Optional;
 
 @Repository
 public interface CalendarPermissionRepository extends JpaRepository<CalendarPermissionEntity, String>,
@@ -20,8 +21,10 @@ public interface CalendarPermissionRepository extends JpaRepository<CalendarPerm
     List<CalendarPermissionEntity> findByOwnerOriginKey(String ownerOriginKey);
     List<CalendarPermissionEntity> findByIcsFileName(String icsFileName);
     void deleteAllByOwnerOriginKey(String teamOriginKey);
+//    List<CalendarPermissionEntity> findUserIdsByTeamUid();
 
-    //CalendarPermissionEntity findOne(Specification<CalendarPermissionEntity> spec);
+    Optional<CalendarPermissionEntity> findOne(Specification<CalendarPermissionEntity> spec);
+//    List<CalendarPermissionEntity> findAll(Specification<CalendarPermissionEntity> spec);
 
     static Specification<CalendarPermissionEntity> findCalendarPermission(String ownerOriginkey, String userId) {
         return (root, query, builder) -> builder.and(builder.equal(root.get("ownerOriginKey"), ownerOriginkey),
@@ -38,11 +41,10 @@ public interface CalendarPermissionRepository extends JpaRepository<CalendarPerm
                 ));
     }
 
-    //JPQL(JPA Query Language) 사용
-    @Query("SELECT c.ownerOriginKey FROM CalendarPermissionEntity c WHERE c.ownerType = :ownerType AND c.userId = :userId")
-    List<String> findTeamOriginKeysByOwnerTypeAndUserId(@Param("ownerType") String ownerType
-            , @Param("userId") String userId);
+    static Specification<CalendarPermissionEntity> findTeamOriginKeysByOwnerTypeAndUserId(String ownerType, String userId) {
+        return (root, query, builder) -> builder.and(
+                builder.equal(root.get("ownerType"), ownerType),
+                builder.equal(root.get("userId"), userId));
+    }
 
-    @Query("SELECT c.userId FROM CalendarPermissionEntity c WHERE c.ownerOriginKey = :key")
-    List<String> findUserIdsByTeamOriginKey(@Param("teamOriginKey") String key);
 }
