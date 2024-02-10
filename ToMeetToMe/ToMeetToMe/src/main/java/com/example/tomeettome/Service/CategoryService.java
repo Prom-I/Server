@@ -5,6 +5,7 @@ import com.example.tomeettome.Model.CategoryEntity;
 import com.example.tomeettome.Model.ScheduleEntity;
 import com.example.tomeettome.Repository.CategoryRepository;
 import com.example.tomeettome.Repository.ScheduleRepository;
+import com.example.tomeettome.Utility.ConvertFactory;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -72,6 +73,12 @@ public class CategoryService {
 
     public void delete(String uid) {
         categoryRepository.delete(categoryRepository.findByUid(uid));
+    }
+
+    public void deleteAll(String userId) {
+        categoryRepository.deleteAll(
+                categoryRepository.findByIcsFileName(
+                        ConvertFactory.getIcsFileNameFromUserId(userId)));
     }
 
 }

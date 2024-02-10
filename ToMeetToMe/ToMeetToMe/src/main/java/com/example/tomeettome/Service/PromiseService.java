@@ -2,7 +2,6 @@ package com.example.tomeettome.Service;
 
 import com.example.tomeettome.Constant.OWNERTYPE;
 import com.example.tomeettome.Model.AppointmentBlockEntity;
-import com.example.tomeettome.Model.CalendarEntity;
 import com.example.tomeettome.Model.CalendarPermissionEntity;
 import com.example.tomeettome.Model.PromiseEntity;
 import com.example.tomeettome.Repository.AppointmentBlockRepository;
@@ -122,6 +121,8 @@ public class PromiseService {
     }
 
     public void deletePromiseByTeamOriginKey(String teamOriginKey){
-        promiseRepository.deleteAllByIcsFileNameContaining(teamRepository.findByOriginKey(teamOriginKey).getName());
+        promiseRepository.deleteAllByIcsFileNameContaining(teamRepository.findByUid(teamOriginKey).getName());
     }
+
+
 }

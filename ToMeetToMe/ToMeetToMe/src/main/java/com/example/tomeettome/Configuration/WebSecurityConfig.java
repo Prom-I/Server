@@ -36,11 +36,11 @@ public class WebSecurityConfig extends WebSecurityConfigurerAdapter {
                 .sessionManagement().sessionCreationPolicy(SessionCreationPolicy.STATELESS)
                 .and()
                 .authorizeRequests()
-                //.antMatchers("/","/test","/user","/auth/**", "/login**", "/error**").permitAll()
-                .anyRequest().permitAll()
-                //.authenticated()
-                //.and()
-                //.oauth2Login()
+                .antMatchers("/","/test","/auth/**","/user","/user/**","/user/kakao/**", "/login**", "/error**").permitAll()
+                .anyRequest()
+                .authenticated()
+//                .and()
+//                .oauth2Login()
 
         ;
 

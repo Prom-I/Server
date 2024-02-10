@@ -11,6 +11,7 @@ import org.springframework.stereotype.Service;
 
 import java.util.List;
 import java.util.Optional;
+import java.util.UUID;
 
 @Slf4j
 @Service
@@ -30,7 +31,7 @@ public class CalendarService {
 
     public CalendarEntity creatTeamCalendar(TeamEntity team) {
         CalendarEntity calendar = CalendarEntity.builder()
-                .icsFileName(generateTeamIcsFilename(team.getFounderId()))
+                .icsFileName(generateTeamIcsFilename())
                 .componentType("VEVENT")
                 .build();
         return calendarRepository.save(calendar);
@@ -58,7 +59,7 @@ public class CalendarService {
             // 나머지
             CalendarPermissionEntity calendarPermission = CalendarPermissionEntity.builder()
                     .icsFileName(calendar.getIcsFileName())
-                    .ownerOriginKey(team.getOriginKey())
+                    .ownerOriginKey(team.getUid())
                     .ownerType(OWNERTYPE.TEAM.name())
                     .permissionLevel(permissionLevel)
                     .userId(user)
@@ -170,11 +171,11 @@ public class CalendarService {
         }
     }
 
-    public CalendarPermissionEntity addNewTeamUser(TeamEntity teamEntity, String inviteeId) {
+    public CalendarPermissionEntity addNewTeamUser(TeamEntity teamEntity, String inviteeId,String teamIcsFileName) {
 
         CalendarPermissionEntity entity = CalendarPermissionEntity.builder()
-                .icsFileName(generateTeamIcsFilename(teamEntity.getFounderId()))
-                .ownerOriginKey(teamEntity.getOriginKey())
+                .icsFileName(teamIcsFileName)
+                .ownerOriginKey(teamEntity.getUid())
                 .ownerType(OWNERTYPE.TEAM.name())
                 .permissionLevel(PERMISSIONLEVEL.MEMBER.name())
                 .userId(inviteeId)
@@ -183,15 +184,37 @@ public class CalendarService {
         return calendarPermissionRepository.save(entity);
     }
 
-    private String generateTeamIcsFilename(String teamFounderId){
-        return "TEAM"+teamFounderId+".ics";
+    private String generateTeamIcsFilename(){
+        return UUID.randomUUID() +".ics";
     }
 
-    public ScheduleEntity delete(String uid) {
+    public ScheduleEntity deleteScheduleByUid(String uid) {
         ScheduleEntity entity = scheduleRepository.findByUid(uid);
         scheduleRepository.delete(entity);
         return entity;
     }
+    public void deleteUserSchedules(String userId){
+        scheduleRepository.deleteAllByIcsFileName(getIcsFileNameFromUserId(userId));
+    }
+
+    // 내가 가진 권한을 삭제
+    public void deleteCalendarPermissionsByUserId(String userId) {
+        calendarPermissionRepository.deleteAll(calendarPermissionRepository.findByUserId(userId));
+    }
+
+    // 상대가 가지는 나의 권한을 삭제
+    public void deleteCalendarPermissionsByIcsFileName(String userId) {
+        calendarPermissionRepository.deleteAll(
+                calendarPermissionRepository.findByIcsFileName(getIcsFileNameFromUserId(userId)));
+    }
+
+    public void deleteCalendar(String userId) {
+        calendarRepository.delete(
+                calendarRepository.findByIcsFileName(getIcsFileNameFromUserId(userId)));
+    }
+
+
+
 
     public void deleteCalendarPermission(String teamOriginKey){
         calendarPermissionRepository.deleteAllByOwnerOriginKey(teamOriginKey);
@@ -219,4 +242,18 @@ public class CalendarService {
         return scheduleRepository.findByUid(uid).getIcsFileName().equals(icsFileName);
     }
 
+    public String getOwnerOriginKeyByIcsFileName(String icsFileName) {
+        return calendarPermissionRepository.findByIcsFileName(icsFileName).get(0).getOwnerOriginKey();
+    }
+
+    public void deleteTeamCalendar(String teamIcsFileName) {
+        calendarRepository.delete(calendarRepository.findByIcsFileName(teamIcsFileName));
+    }
+
+    public String getIcsFileNameFromUserId(String userId){
+        StringBuilder sb = new StringBuilder();
+        sb.append(userId);
+        sb.append(".ics");
+        return sb.toString();
+    }
 }
