@@ -233,6 +233,18 @@ public class PreferenceController {
         }
     }
 
+    @DeleteMapping("/custom/{preferenceUid}")
+    public ResponseEntity<?> deleteCustomPreference(@PathVariable("preferenceUid") String preferenceUid) {
+        try {
+            preferenceService.deletePreferences(promiseUid);
+            cleanupPromiseData(promiseUid);
+            return ResponseEntity.status(HttpStatus.NO_CONTENT).body(null);
+        }
+        catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(e.getMessage());
+        }
+    }
+
     public void cleanupPromiseData(String promiseUid) {
         preferenceService.deleteAppointmentBlocks(promiseUid);
         voteService.deleteVotes(promiseUid);
