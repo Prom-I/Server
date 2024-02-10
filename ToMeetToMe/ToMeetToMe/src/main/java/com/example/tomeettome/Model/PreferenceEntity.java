@@ -34,7 +34,10 @@ public class PreferenceEntity {
     private LocalDateTime dtEnd;
 
     private int likes; // 좋아요 누른 사람 수
-    private String location;
+    private int rank; // 로직으로 추천된 경우, 순위
+    private String type; // 로직으로 추천된 건지, 직접 선택으로 만든건지 구별하기 위해
+
+//    private String location;
     @UpdateTimestamp
     private LocalDateTime lastModifiedAt;
 
