@@ -2,32 +2,40 @@ package com.example.tomeettome.Security;
 
 import com.example.tomeettome.DTO.Apple.AppleKeyDTO;
 import com.example.tomeettome.Model.UserEntity;
+import com.google.api.client.util.PemReader;
 import com.nimbusds.jwt.SignedJWT;
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.SignatureAlgorithm;
 import lombok.extern.slf4j.Slf4j;
+import org.bouncycastle.asn1.pkcs.PrivateKeyInfo;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.core.io.ClassPathResource;
 import org.springframework.stereotype.Service;
 
+import java.io.*;
 import java.math.BigInteger;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Paths;
 import java.security.KeyFactory;
 import java.security.NoSuchAlgorithmException;
+import java.security.PrivateKey;
 import java.security.PublicKey;
 import java.security.spec.InvalidKeySpecException;
+import java.security.spec.PKCS8EncodedKeySpec;
 import java.security.spec.RSAPublicKeySpec;
 import java.text.ParseException;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.*;
+import java.util.stream.Collectors;
+import java.lang.*;
 
 @Slf4j
 @Service
 public class TokenProvider {
-    private static final String SECRET_KEY = "2B738E9FDA91B5366619C5D21156F";
-    private static final String APPLE_KEY = "MIGTAgEAMBMGByqGSM49AgEGCCqGSM49AwEHBHkwdwIBAQQghB8f+subbfCE7QfG" +
-            "TLP2HZ9uKi9zF0pOS3M6RV2r5OegCgYIKoZIzj0DAQehRANCAASiIvAhjFE5YsLj" +
-            "efzoWlxFpEzjD8+VywkAo6nw/Vh5RtdwD/hBDtEbg9Fmo4cKaLFPXDwBvcAktuJP" +
-            "fuEALxMh";
+    @Value("${spring.security.secret-key}") String SECRET_KEY;
 
     public String create(UserEntity userEntity) {
         Date expiryDate = Date.from(
@@ -46,8 +54,7 @@ public class TokenProvider {
     }
 
     // Apple 용 ClientSecret을 생성하는 함수
-    public String createClientSecret() {
-
+    public String createClientSecret() throws IOException, NoSuchAlgorithmException, InvalidKeySpecException {
         Date expiryDate = Date.from(
                 Instant.now().plus(1, ChronoUnit.DAYS));
         return Jwts.builder()
@@ -56,10 +63,9 @@ public class TokenProvider {
                 .setIssuer("WJKNV9KXF2") // Team ID
                 .setAudience("https://appleid.apple.com")
                 .setExpiration(expiryDate)
-                .signWith(SignatureAlgorithm.ES256, APPLE_KEY)
+                .signWith(SignatureAlgorithm.ES256, getPrivateKey())
                 .setSubject("com.ToMeetToMe.services")
                 .compact();
-
     }
 
     public String validateAndGetUserId(String token) {
@@ -110,7 +116,35 @@ public class TokenProvider {
         KeyFactory keyFactory = KeyFactory.getInstance(dto.getKty());
 
         return keyFactory.generatePublic(publicKeySpec);
-
     }
+
+    private PrivateKey getPrivateKey() throws IOException, NoSuchAlgorithmException, InvalidKeySpecException {
+        // .p8 파일을 ClassPathResource를 통해 로드
+        ClassPathResource resource = new ClassPathResource("static/AuthKey_PLN2475U77.p8");
+        String privateKeyContent = new String(resource.getInputStream().readAllBytes(), StandardCharsets.UTF_8)
+                .replace("-----BEGIN PRIVATE KEY-----", "")
+                .replace("-----END PRIVATE KEY-----", "")
+                .replaceAll("\\s", "");
+
+        // Base64 디코딩 및 KeyFactory를 사용해 PrivateKey 객체 생성
+        byte[] pkcs8EncodedBytes = Base64.getDecoder().decode(privateKeyContent);
+        PKCS8EncodedKeySpec keySpec = new PKCS8EncodedKeySpec(pkcs8EncodedBytes);
+        KeyFactory keyFactory = KeyFactory.getInstance("EC");
+        return keyFactory.generatePrivate(keySpec);
+    }
+
+//    public PrivateKey getPrivateKey() throws IOException {
+//        ClassPathResource resource = new ClassPathResource("static/AuthKey_1234ABCD.p8"); // .p8 key파일 위치
+//        String privateKey = new String(Files.readAllBytes(Paths.get(resource.getURI())));
+//
+////    File f = new File("C:/workspace/AuthKey_1234ABCD.p8");
+////    String privateKey = new String(Files.readAllBytes(f.toPath()));
+//
+//        Reader pemReader = new StringReader(privateKey);
+//        PEMParser pemParser = new PEMParser(pemReader);
+//        JcaPEMKeyConverter converter = new JcaPEMKeyConverter();
+//        PrivateKeyInfo object = (PrivateKeyInfo) pemParser.readObject();
+//        return converter.getPrivateKey(object);
+//    }
 }
 
