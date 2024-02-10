@@ -31,6 +31,8 @@ public class UserEntity {
     private String image;
     private String platform;
     private String fcmToken;
+    private String accessToken;
+    private String refreshToken;
 
     @UpdateTimestamp
     private LocalDateTime lastModifiedAt;
