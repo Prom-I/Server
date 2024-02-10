@@ -1,5 +1,6 @@
 package com.example.tomeettome.Service;
 
+import com.example.tomeettome.Constant.PREFERENCETYPE;
 import com.example.tomeettome.DTO.CaldavDTO;
 import com.example.tomeettome.Model.*;
 import com.example.tomeettome.Repository.*;
@@ -272,6 +273,8 @@ public class PreferenceService {
 
             p.setLikes(0);
             p.setPromiseUid(promiseUid);
+            p.setType(PREFERENCETYPE.SYSTEM.name());
+            p.setRank(i+1);
             pList.add(p);
             savePreference(p);
         }
@@ -328,6 +331,10 @@ public class PreferenceService {
 
     public void deletePreferences(String promiseUid) {
         preferenceRepository.deleteAll(preferenceRepository.findByPromiseUid(promiseUid));
+    }
+
+    public void deleteCustomPreference(String preferenceUid) {
+
     }
 
     public static String getUserIdFromIcsFileName(String icsFileName) {
