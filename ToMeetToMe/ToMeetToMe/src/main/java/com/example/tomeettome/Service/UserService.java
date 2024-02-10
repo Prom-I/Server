@@ -2,6 +2,7 @@ package com.example.tomeettome.Service;
 
 import com.example.tomeettome.Constant.OWNERTYPE;
 import com.example.tomeettome.Constant.PERMISSIONLEVEL;
+import com.example.tomeettome.Constant.PLATFORM;
 import com.example.tomeettome.DTO.Apple.AppleKeyDTO;
 import com.example.tomeettome.Model.CalendarPermissionEntity;
 import com.example.tomeettome.Model.UserEntity;
@@ -17,14 +18,14 @@ import org.json.JSONArray;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.json.JSONException;
 import org.json.JSONObject;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.jpa.domain.Specification;
-import org.springframework.http.HttpEntity;
-import org.springframework.http.HttpHeaders;
-import org.springframework.http.HttpMethod;
-import org.springframework.http.ResponseEntity;
+import org.springframework.http.*;
 import org.springframework.stereotype.Service;
 import java.io.*;
 import java.security.GeneralSecurityException;
+import java.security.NoSuchAlgorithmException;
+import java.security.spec.InvalidKeySpecException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -43,7 +44,69 @@ public class UserService {
     @Autowired UserRepository userRepository;
     @Autowired CalendarPermissionRepository calendarPermissionRepository;
     @Autowired TokenProvider tokenProvider;
+    @Value("${google.client.id}") String CLIENT_ID_GOOGLE;
+    @Value("${google.client.secret}") String CLIENT_SECRET_GOOGLE;
+    @Value("${apple.client-id}") String CLIENT_ID_APPLE;
 
+    public List<String> createAccessTokenGoogle(String code) {
+//        POST /token HTTP/1.1
+//        https://oauth2.googleapis.com/token
+//        Host: oauth2.googleapis.com
+//        Content-Type: application/x-www-form-urlencoded
+//
+//        code=4/P7q7W91a-oMsCeLvIaQm6bTrgtp7&
+//                client_id=your-client-id&
+//                client_secret=your-client-secret&
+//                redirect_uri=https%3A//oauth2.example.com/code&
+//                grant_type=authorization_code
+        String result = "";
+        String requestUrl = "https://oauth2.googleapis.com/token";
+
+        //보낼 파라메터 셋팅
+        MultiValueMap<String, String> params = new LinkedMultiValueMap<>();
+        params.add("code", code);
+        params.add("client_id", CLIENT_ID_GOOGLE);
+        params.add("client_secret", CLIENT_SECRET_GOOGLE);
+        params.add("grant_type", "authorization_code");
+        params.add("redirect_uri","https://www.tmtm.site/user/google/callback");
+
+        //헤더셋팅
+        HttpHeaders headers = new HttpHeaders();
+        headers.add("Content-type", "application/x-www-form-urlencoded;charset=utf-8");
+
+        //파라메터와 헤더 합치기
+        HttpEntity<MultiValueMap<String, String>> entity = new HttpEntity<>(params, headers);
+        //RestTemplate 초기화
+        RestTemplate rt = new RestTemplate();
+
+        //전송 및 결과 처리
+        ResponseEntity<String> response = rt.exchange(
+                requestUrl,
+                HttpMethod.POST,
+                entity,
+                String.class
+        );
+//        {
+//            "access_token": "adg61...67Or9",
+//                "token_type": "Bearer",
+//                "expires_in": 3600,
+//                "refresh_token": "rca7...lABoQ",
+//                "id_token": "eyJra...96sZg"
+//        }
+
+
+        result = response.getBody();
+
+        JSONObject jsonObject = new JSONObject(result);
+        String idToken = jsonObject.getString("id_token");
+        String accessToken = jsonObject.getString("access_token");
+        String refreshToken = jsonObject.getString("refresh_token");
+        List<String> tokens = new ArrayList<>();
+        tokens.add(accessToken);
+        tokens.add(refreshToken);
+        tokens.add(idToken);
+        return tokens;
+    }
 
     public UserEntity validateIdTokenGoogle(String idTokenString) throws GeneralSecurityException, IOException {
 
@@ -83,7 +146,7 @@ public class UserService {
             log.info("Given Name: " + givenName);
 
             UserEntity user = UserEntity.builder()
-                    .userName(name + "#" +userRepository.findAll().size())
+                    .userName(name + "#" +userRepository.findAll().size()+1)
                     .userId(email)
                     .platform("Google")
                     .build();
@@ -94,7 +157,54 @@ public class UserService {
         }
     }
 
-    public String createAuthCodeKakao(String code) throws JSONException {
+    public String getAccessTokenByRefreshTokenGoogle(String refreshToken) {
+        String result = "";
+//        POST /token HTTP/1.1
+//        Host: oauth2.googleapis.com
+//        Content-Type: application/x-www-form-urlencoded
+//
+//        client_id=your_client_id&
+//                client_secret=your_client_secret&
+//                refresh_token=refresh_token&
+//                grant_type=refresh_token
+        String requestUrl = "https://oauth2.googleapis.com/token";
+
+        //보낼 파라메터 셋팅
+        MultiValueMap<String, String> params = new LinkedMultiValueMap<>();
+        params.add("client_id",CLIENT_ID_GOOGLE);
+        params.add("client_secret", CLIENT_SECRET_GOOGLE);
+        params.add("refresh_token", refreshToken);
+        params.add("grant_type", "refresh_token");
+
+        //헤더셋팅
+        HttpHeaders headers = new HttpHeaders();
+        headers.add("Content-type", "application/x-www-form-urlencoded");
+
+        //파라메터와 헤더 합치기
+        HttpEntity<MultiValueMap<String, String>> entity = new HttpEntity<>(params, headers);
+        //RestTemplate 초기화
+        RestTemplate rt = new RestTemplate();
+
+        //전송 및 결과 처리
+        ResponseEntity<String> response = rt.exchange(
+                requestUrl,
+                HttpMethod.POST,
+                entity,
+                String.class
+        );
+//        {
+//            "access_token": "1/fFAGRNJru1FTz70BzhT3Zg",
+//                "expires_in": 3920,
+//                "scope": "https://www.googleapis.com/auth/drive.metadata.readonly",
+//                "token_type": "Bearer"
+//        }
+        result = response.getBody(); // 리턴되는 결과의 body를 저장
+        JSONObject jsonObject = new JSONObject(result);
+        String accessToken = jsonObject.getString("access_token");
+        return accessToken;
+    }
+
+    public List<String> createAuthCodeKakao(String code) throws JSONException {
         String result="";
         String requestUrl = "https://kauth.kakao.com/oauth/token";
 
@@ -103,6 +213,7 @@ public class UserService {
         params.add("grant_type", "authorization_code");
         params.add("client_id","5ce66229811ad9d602663cadba712f32");
         params.add("redirect_uri","https://www.tmtm.site/user/kakao/callback");
+//        params.add("redirect_uri","http://localhost/user/kakao/callback");
         params.add("code",code);
         params.add("client_secret", "tp7pv9xiq7MIJ9rRgotjQDdrpM8mjD2S");
 
@@ -126,12 +237,11 @@ public class UserService {
         JSONObject jsonObject = new JSONObject(result);
         String idToken = jsonObject.getString("id_token");
         String accessToken = jsonObject.getString("access_token");
-
-//        byte[] decodedBytes = Base64.getDecoder().decode(idToken);
-//        String decodedStr = new String(decodedBytes);
-
-//        log.info("decoded : ", decodedStr );
-        return accessToken;
+        String refreshToken = jsonObject.getString("refresh_token");
+        List<String> tokens = new ArrayList<>();
+        tokens.add(accessToken);
+        tokens.add(refreshToken);
+        return tokens;
     }
 
     public UserEntity getUserInfoKaKao(String accessToken) throws JSONException {
@@ -161,6 +271,8 @@ public class UserService {
 
         UserEntity user = UserEntity.builder()
                 .userId(jsonObject.getString("email"))
+                .userName(jsonObject.getString("nickname") + "#" + userRepository.findAll().size()+1)
+                .platform(PLATFORM.KAKAO.name())
                 .build();
 
         if(!(jsonObject.getBoolean("email_verified"))) {
@@ -170,7 +282,26 @@ public class UserService {
         return user;
     }
 
-    public void validateAccessTokenKakao(String accessToken) {
+    public UserEntity getUserInfoApple(String email, String accessToken, String refreshToken, String userInfo) {
+        // accessToken,refreshToken UserEntity에 세팅
+        UserEntity user = UserEntity.builder()
+                .userId(email)
+                .accessToken(accessToken)
+                .refreshToken(refreshToken)
+                .build();
+
+        JSONObject jsonObject = new JSONObject(userInfo);
+        JSONObject name = (JSONObject) jsonObject.get("name");
+        String firstName = name.getString("firstName");
+        String lastName = name.getString("lastName");
+
+        user.setUserName(lastName+firstName+ "#" + userRepository.findAll().size()+1);
+        user.setPlatform(PLATFORM.APPLE.name());
+
+        return user;
+    }
+
+    public HttpStatus validateAccessTokenKakao(String accessToken) {
         String result="";
         String requestUrl = "https://kapi.kakao.com/v1/user/access_token_info";
 
@@ -193,9 +324,52 @@ public class UserService {
                 entity,
                 String.class
         );
+        return response.getStatusCode();
     }
 
-    public String createIdTokenApple(String code) {
+    public String getAccessTokenByRefreshTokenKakao(String clientId, String refreshToken, String clientSecret) {
+        String result="";
+        String requestUrl = "https://kauth.kakao.com/oauth/token";
+
+        //보낼 파라메터 셋팅
+        MultiValueMap<String, String> params = new LinkedMultiValueMap<>();
+        params.add("grant_type", "refresh_token");
+        params.add("client_id", clientId);
+        params.add("refresh_token", refreshToken);
+        params.add("client_secret", clientSecret);
+
+        //헤더셋팅
+        HttpHeaders headers = new HttpHeaders();
+        headers.add("Content-type", "application/x-www-form-urlencoded;charset=utf-8");
+
+        //파라메터와 헤더 합치기
+        HttpEntity<MultiValueMap<String, String>> entity = new HttpEntity<>(params, headers);
+        //RestTemplate 초기화
+        RestTemplate rt = new RestTemplate();
+
+        //전송 및 결과 처리
+        ResponseEntity<String> response = rt.exchange(
+                requestUrl,
+                HttpMethod.POST,
+                entity,
+                String.class
+        );
+
+        result = response.getBody(); // 리턴되는 결과의 body를 저장
+        JSONObject jsonObject = new JSONObject(result);
+        String accessToken = jsonObject.getString("access_token");
+        return accessToken;
+    }
+
+    public List<String> createAccessTokenApple(String code) throws IOException, NoSuchAlgorithmException, InvalidKeySpecException {
+//        curl -v POST "https://appleid.apple.com/auth/token" \
+//        -H 'content-type: application/x-www-form-urlencoded' \
+//        -d 'client_id=CLIENT_ID' \
+//        -d 'client_secret=CLIENT_SECRET' \
+//        -d 'code=CODE' \
+//        -d 'grant_type=authorization_code' \
+//        -d 'redirect_uri=REDIRECT_URI'
+
         String result = "";
         String requestUrl = "https://appleid.apple.com/auth/token";
 
@@ -223,13 +397,25 @@ public class UserService {
                 entity,
                 String.class
         );
+//        {
+//            "access_token": "adg61...67Or9",
+//                "token_type": "Bearer",
+//                "expires_in": 3600,
+//                "refresh_token": "rca7...lABoQ",
+//                "id_token": "eyJra...96sZg"
+//        }
+
 
         result = response.getBody();
 
         JSONObject jsonObject = new JSONObject(result);
         String idToken = jsonObject.getString("id_token");
-
-        return idToken;
+        String accessToken = jsonObject.getString("access_token");
+        String refreshToken = jsonObject.getString("refresh_token");
+        List<String> tokens = new ArrayList<>();
+        tokens.add(accessToken);
+        tokens.add(refreshToken);
+        return tokens;
     }
 
     public List<AppleKeyDTO> createPublicKeyApple() {
@@ -404,5 +590,96 @@ public class UserService {
 
     public String findFcmTokenByUserId(String userId) {
         return userRepository.findByUserId(userId).getFcmToken();
+    }
+
+    public void deleteUser(String userId) {
+        userRepository.delete(userRepository.findByUserId(userId));
+    }
+
+    public void unlinkKakao(String accessToken) {
+//        curl -v -X POST "https://kapi.kakao.com/v1/user/unlink" \
+//        -H "Content-Type: application/x-www-form-urlencoded" \
+//        -H "Authorization: Bearer ${ACCESS_TOKEN}"
+
+//        {
+//            "id": 123456789
+//        }
+
+        String result="";
+        String requestUrl = "https://kapi.kakao.com/v1/user/unlink";
+
+        //보낼 파라메터 셋팅
+        MultiValueMap<String, String> params = new LinkedMultiValueMap<>();
+
+        //헤더셋팅
+        HttpHeaders headers = new HttpHeaders();
+        headers.add("Content-type", "application/x-www-form-urlencoded");
+        headers.add("Authorization", "Bearer " + accessToken);
+
+        //파라메터와 헤더 합치기
+        HttpEntity<MultiValueMap<String, String>> entity = new HttpEntity<>(params, headers);
+        //RestTemplate 초기화
+        RestTemplate rt = new RestTemplate();
+
+        //전송 및 결과 처리
+        ResponseEntity<String> response = rt.exchange(
+                requestUrl,
+                HttpMethod.POST,
+                entity,
+                String.class
+        );
+    }
+
+    public void unlinkApple(String token, String tokenTypeHint) throws IOException, NoSuchAlgorithmException, InvalidKeySpecException {
+        String requestUrl = "https://appleid.apple.com/auth/revoke";
+
+        //보낼 파라메터 셋팅
+        MultiValueMap<String, String> params = new LinkedMultiValueMap<>();
+        params.add("client_id",CLIENT_ID_APPLE);
+        params.add("client_secret", tokenProvider.createClientSecret());
+        params.add("token", token);
+        params.add("token_type_hint", tokenTypeHint);
+
+        //헤더셋팅
+        HttpHeaders headers = new HttpHeaders();
+        headers.add("Content-type", "application/x-www-form-urlencoded");
+
+        //파라메터와 헤더 합치기
+        HttpEntity<MultiValueMap<String, String>> entity = new HttpEntity<>(params, headers);
+        //RestTemplate 초기화
+        RestTemplate rt = new RestTemplate();
+
+        //전송 및 결과 처리
+        ResponseEntity<String> response = rt.exchange(
+                requestUrl,
+                HttpMethod.POST,
+                entity,
+                String.class
+        );
+    }
+
+    public void unlinkGoogle(String accessToken) {
+        String requestUrl = "https://oauth2.googleapis.com/revoke";
+
+        //보낼 파라메터 셋팅
+        MultiValueMap<String, String> params = new LinkedMultiValueMap<>();
+        params.add("token", accessToken);
+
+        //헤더셋팅
+        HttpHeaders headers = new HttpHeaders();
+        headers.add("Content-type", "application/x-www-form-urlencoded");
+
+        //파라메터와 헤더 합치기
+        HttpEntity<MultiValueMap<String, String>> entity = new HttpEntity<>(params, headers);
+        //RestTemplate 초기화
+        RestTemplate rt = new RestTemplate();
+
+        //전송 및 결과 처리
+        ResponseEntity<String> response = rt.exchange(
+                requestUrl,
+                HttpMethod.POST,
+                entity,
+                String.class
+        );
     }
 }
