@@ -11,7 +11,6 @@ import com.example.tomeettome.Service.PromiseService;
 import lombok.extern.slf4j.Slf4j;
 import net.fortuna.ical4j.data.ParserException;
 import net.fortuna.ical4j.model.Property;
-import org.checkerframework.checker.units.qual.C;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -21,7 +20,6 @@ import org.springframework.web.bind.annotation.*;
 import java.io.IOException;
 import java.net.URISyntaxException;
 import java.text.ParseException;
-import java.util.Collections;
 
 @Slf4j
 @RestController
@@ -81,7 +79,7 @@ public class ScheduleController {
     @PutMapping("/delete/{scheduleUid}")
     public ResponseEntity<?> delete(@PathVariable("scheduleUid") String uid) {
         try {
-            calendarService.delete(uid);
+            calendarService.deleteScheduleByUid(uid);
             return ResponseEntity.status(HttpStatus.NO_CONTENT).body(null);
 
         } catch (Exception e) {

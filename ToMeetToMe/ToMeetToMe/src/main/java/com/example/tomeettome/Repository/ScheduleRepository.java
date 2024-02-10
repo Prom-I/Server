@@ -31,6 +31,7 @@ public interface ScheduleRepository extends JpaRepository<ScheduleEntity, String
     List<ScheduleEntity> findByCategoryUid(String categoryUid);
 //    List<ScheduleEntity> findAllByDtStartBetweenAndDtEndBetween(LocalDateTime dtStart, LocalDateTime dtEnd);
     List<ScheduleEntity> findAll(Specification<ScheduleEntity> spec);
+    void deleteAllByIcsFileName(String icsFileName);
 
     static Specification<ScheduleEntity> hasPreferredTimeRange(Timestamp startTime, Timestamp endTime) {
         return (root, query, builder) ->
