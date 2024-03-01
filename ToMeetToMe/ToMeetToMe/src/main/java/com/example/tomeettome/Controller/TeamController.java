@@ -12,7 +12,6 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
-import javax.persistence.EntityNotFoundException;
 import java.util.Collections;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -53,6 +52,7 @@ public class TeamController {
 
             team = teamService.createTeam(team);
             CalendarEntity calendar = calendarService.creatTeamCalendar(team);
+
             calendarService.createTeamCalendarPermission(team, dto, calendar);
 
             TeamDTO teamDTO = TeamDTO.builder()
@@ -60,6 +60,7 @@ public class TeamController {
                     .teamUsers(dto.getTeamUsers())
                     .founderId(team.getFounderId())
                     .image(team.getImage())
+                    .icsFileName(calendar.getIcsFileName())
                     .build();
 
             ResponseDTO<TeamDTO> response = ResponseDTO.<TeamDTO>builder().data(Collections.singletonList(teamDTO)).status("success").build();
@@ -141,7 +142,7 @@ public class TeamController {
         }
     }
 
-    @GetMapping("retrieve/users/{teamIcsFileName}")
+    @GetMapping("/retrieve/users/{teamIcsFileName}")
     public ResponseEntity<?> retrieveUsers(@PathVariable("teamIcsFileName") String teamIcsFileName) {
         try {
             List<UserEntity> entities = teamService.retrieveTeamUsers(teamIcsFileName);

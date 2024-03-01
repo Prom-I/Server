@@ -276,7 +276,7 @@ public class UserController {
             String userId = "zxy789@nate.com";
             // 스케쥴 삭제
             calendarService.deleteUserSchedules(userId);
-            //카테고리 삭제
+            // 카테고리 삭제
             categoryService.deleteAll(userId);
             // 내가 가진 캘린더 권한 삭제
             calendarService.deleteCalendarPermissionsByUserId(userId);
@@ -284,7 +284,7 @@ public class UserController {
             calendarService.deleteCalendarPermissionsByIcsFileName(userId);
             // 캘린더 삭제
             calendarService.deleteCalendar(userId);
-            //소셜 로그인 끊기
+            // 소셜 로그인 끊기
             UserEntity user = userService.retrieveProfile(userId);
             String platform = user.getPlatform();
 

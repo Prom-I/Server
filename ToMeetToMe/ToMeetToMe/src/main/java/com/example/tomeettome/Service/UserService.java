@@ -295,7 +295,7 @@ public class UserService {
         String firstName = name.getString("firstName");
         String lastName = name.getString("lastName");
 
-        user.setUserName(lastName+firstName+ "#" + userRepository.findAll().size()+1);
+        user.setUserName(lastName+firstName+ "#" + (userRepository.findAll().size()+1));
         user.setPlatform(PLATFORM.APPLE.name());
 
         return user;

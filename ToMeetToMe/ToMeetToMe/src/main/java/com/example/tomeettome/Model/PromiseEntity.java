@@ -31,8 +31,10 @@ public class PromiseEntity {
     private LocalDateTime dtEnd; // 확정된 후에는 최종 약속 날짜+시간
     private String location;
 
-    private String absentee;
+    private String preferredDays; // 약속을 갱신할 때 약속 추천을 갱신하려면 이 정보가 필요하기 때문에 1,2,3,4,5
+    private int duration; // 2
 
+    private String absentee;
     private String attendee;
 
     @UpdateTimestamp

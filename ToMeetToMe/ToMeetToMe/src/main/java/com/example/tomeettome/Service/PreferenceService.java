@@ -21,10 +21,8 @@ import java.util.*;
 @Slf4j
 @Service
 
-
 public class PreferenceService {
-    @Autowired
-    private PromiseRepository promiseRepository;
+    @Autowired private PromiseRepository promiseRepository;
     @Autowired PreferenceRepository preferenceRepository;
     @Autowired CalendarService calendarService;
     @Autowired TeamRepository teamRepository;
@@ -37,7 +35,7 @@ public class PreferenceService {
 
     // 참석자와 불참석자의 각 List를 담은 class
 
-    class UserInfo{
+    class UserInfo {
         String uid;
         String name;
 
@@ -100,11 +98,11 @@ public class PreferenceService {
         LocalDate startDayScope = LocalDate.parse(startScope[0], DateTimeFormatter.ofPattern("yyyyMMdd"));
         LocalDate endDayScope = LocalDate.parse(endScope[0], DateTimeFormatter.ofPattern("yyyyMMdd"));
 
-        int duration = Integer.parseInt(precondition.getDuration().substring(2).split("H")[0]);
+
         // Time Scope Parsing, 하루에 가능한 블록 개수 : end-duration-start+1
         // 예시로, timeScope=09~21, duration=2라면 마지막 블록이 19~21 블록이므로 이런 계산이 나옴
         int timeRange = Integer.parseInt(endScope[1].substring(0,2))
-                - duration - Integer.parseInt(startScope[1].substring(0,2)) + 1;
+                - precondition.getDuration() - Integer.parseInt(startScope[1].substring(0,2)) + 1;
 
         List<String> times = new ArrayList<>();
         // 블록 개수가 10개면 가능한 블록들을 시간으로 바꿔서 넣으려면 시작시간부터 블록 개수를 하나씩 늘려가며 더해주면 됨
@@ -160,7 +158,7 @@ public class PreferenceService {
             userIdList.add(p.getUserId());
         }
 
-        schedules.addAll(findSchedulesWithPreferences(preferredDateTimes, userIdList, duration));
+        schedules.addAll(findSchedulesWithPreferences(preferredDateTimes, userIdList, precondition.getDuration()));
 
         System.out.println("dd");
 
@@ -169,7 +167,6 @@ public class PreferenceService {
         for (String uid : userIdList) {
             USERDICTIONARY.put(uid, userRepository.findByUserId(uid).getUserName());
         }
-
 
 //        // 각 Indexing Block, Timestamp 별로 참석자와 불참석자 List를 가짐
 //        class AppointmentBlock {
@@ -213,7 +210,7 @@ public class PreferenceService {
 
         for (Timestamp timestamp : appointmentBlock.keySet()) {
             for (ScheduleEntity schedule : schedules) {
-                if (isTimestampRangeContained(schedule.getDtStart(), schedule.getDtEnd(), timestamp, new Timestamp(timestamp.getTime() + (oneHourInMillis * duration)))) {
+                if (isTimestampRangeContained(schedule.getDtStart(), schedule.getDtEnd(), timestamp, new Timestamp(timestamp.getTime() + (oneHourInMillis * precondition.getDuration())))) {
                     if(appointmentBlock.get(timestamp).attendees.remove(
                             new UserInfo(getUserIdFromIcsFileName(schedule.getIcsFileName()),
                                     USERDICTIONARY.get(getUserIdFromIcsFileName(schedule.getIcsFileName()))))) {
@@ -274,7 +271,7 @@ public class PreferenceService {
             p.setLikes(0);
             p.setPromiseUid(promiseUid);
             p.setType(PREFERENCETYPE.SYSTEM.name());
-            p.setRank(i+1);
+            p.setPriority(i+1);
             pList.add(p);
             savePreference(p);
         }
@@ -333,8 +330,18 @@ public class PreferenceService {
         preferenceRepository.deleteAll(preferenceRepository.findByPromiseUid(promiseUid));
     }
 
-    public void deleteCustomPreference(String preferenceUid) {
-
+    public PreferenceEntity deleteCustomPreference(String preferenceUid) {
+        try {
+            PreferenceEntity preference = preferenceRepository.findByUid(preferenceUid);
+            if (preference != null && preference.getType().equals(PREFERENCETYPE.CUSTOM.name())) {
+                preferenceRepository.delete(preference);
+                return preference;
+            }
+        }
+        catch (Exception e) {
+            return null;
+        }
+        return null;
     }
 
     public static String getUserIdFromIcsFileName(String icsFileName) {

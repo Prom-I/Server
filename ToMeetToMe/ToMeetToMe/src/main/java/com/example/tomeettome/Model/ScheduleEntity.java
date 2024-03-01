@@ -45,5 +45,4 @@ public class ScheduleEntity {
 
     @CreationTimestamp
     private LocalDateTime createdAt;
-
 }

@@ -18,7 +18,7 @@ public class TeamDTO {
     private String founderId;
     private String image;
     private String [] teamUsers;
-
+    private String icsFileName;
 
     public TeamDTO(TeamEntity entity) {
         this.name = entity.getName();

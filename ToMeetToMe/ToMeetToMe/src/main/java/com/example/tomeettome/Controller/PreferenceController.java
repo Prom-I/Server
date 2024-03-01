@@ -1,5 +1,6 @@
 package com.example.tomeettome.Controller;
 
+import com.example.tomeettome.Constant.PREFERENCETYPE;
 import com.example.tomeettome.Constant.STATUS;
 import com.example.tomeettome.DTO.BlockDTO;
 import com.example.tomeettome.DTO.CaldavDTO;
@@ -17,7 +18,6 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
-import org.springframework.security.core.parameters.P;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
@@ -26,6 +26,7 @@ import java.io.IOException;
 import java.net.URISyntaxException;
 import java.text.ParseException;
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.Collections;
 import java.util.List;
@@ -42,7 +43,6 @@ public class PreferenceController {
     @Autowired VoteService voteService;
     /**
      *
-     * @param userId Preference의 Organizer
      * @param icsFileName Team Calender의 ics File Name
      * @param component 실제 ics File
      * @return
@@ -63,26 +63,32 @@ public class PreferenceController {
             List<String> preferredDays = List.of(dto.getValue(component, Property.EXPERIMENTAL_PREFIX + "PREFERREDDAYS").split(","));
             String startScope = dto.getValue(component, Property.EXPERIMENTAL_PREFIX + "STARTSCOPE");
             String endScope = dto.getValue(component, Property.EXPERIMENTAL_PREFIX + "ENDSCOPE");
-            String duration = dto.getValue(component, Property.DURATION);
+
+            String duration = dto.getValue(component, Property.DURATION).substring(2).split("H")[0];
 
             LocalDate startDayScope = LocalDate.parse(startScope.split("T")[0], DateTimeFormatter.ofPattern("yyyyMMdd"));
             LocalDate endDayScope = LocalDate.parse(endScope.split("T")[0], DateTimeFormatter.ofPattern("yyyyMMdd"));
 
-            // Promise가 처음 만들어지는 것이므로 dtStart, dtEnd는 처음 설정한 scope로, time은 0시 0분으로
+            // refresh 할때 timeScope까지 필요해서 dayScope를 LocalDateTime 객체로
+            LocalDateTime startDayScopeWithTime = LocalDateTime.parse(startScope, DateTimeFormatter.ofPattern("yyyyMMdd'T'HHmmss'Z'"));
+            LocalDateTime endDayScopeWithTime = LocalDateTime.parse(endScope, DateTimeFormatter.ofPattern("yyyyMMdd'T'HHmmss'Z'"));
+
             PromiseEntity promise = PromiseEntity.builder()
                     .organizerId(userId)
                     .status(STATUS.TENTATIVE.name())
                     .icsFileName(icsFileName)
-                    .dtStart(startDayScope.atTime(0, 0))
-                    .dtEnd(endDayScope.atTime(0, 0))
+                    .dtStart(startDayScopeWithTime)
+                    .dtEnd(endDayScopeWithTime)
                     .location(dto.getValue(component, Property.LOCATION))
                     .summary(dto.getValue(component, Property.SUMMARY))
+                    .preferredDays(dto.getValue(component, Property.EXPERIMENTAL_PREFIX + "PREFERREDDAYS"))
+                    .duration(Integer.parseInt(duration))
                     .build();
 
             promise = promiseService.create(promise);
             preference.setPromiseUid(promise.getUid());
 
-            CaldavDTO.Precondition precondition = new CaldavDTO.Precondition(preferredDays, startScope, endScope, duration, promise.getUid());
+            CaldavDTO.Precondition precondition = new CaldavDTO.Precondition(preferredDays, startScope, endScope, Integer.parseInt(duration), promise.getUid());
 
             return ResponseEntity.status(HttpStatus.CREATED).headers(headers).body(CaldavDTO.setPreferenceValue
                     (preferenceService.create(icsFileName, precondition), promise));
@@ -175,21 +181,26 @@ public class PreferenceController {
     // preference 삭제
     // appointment block 삭제
     // vote 삭제
-    // refresh 하려면 preferredDays 정보가 있어야 하는데, DB에 저장을 안함 ...
-//    @GetMapping("/refresh/{icsFileName}/{promiseUid}")
-//    public ResponseEntity<?> refresh(@PathVariable("icsFileName") String icsFileName,
-//                                     @PathVariable("promiseUid") String promiseUid,
-//                                     @RequestBody String component) throws IOException, ParseException, URISyntaxException {
-//        cleanupPromiseData(promiseUid);
-//        HttpHeaders headers = makeCaldavHeader();
-//
-//        PromiseEntity promise = promiseService.findByPromiseUid(promiseUid);
-//
-//        CaldavDTO.Precondition precondition = new CaldavDTO.Precondition(preferredDays,startScope,endScope,duration, promise.getUid());
-//
-//        return ResponseEntity.status(HttpStatus.OK).headers(headers).body(CaldavDTO.setPreferenceValue
-//                (preferenceService.create(icsFileName, precondition), promise));
-//    }
+    // refresh 하려면 처음에 약속 생성 시에 받았던 초기 정보들을 모두 저장하고 있어야 함 preferredDays, startScope, endScope, duration
+    // startScope랑 endScope는 LocalDateTime 객체로 변경 완료해서, DayScope Timescope 둘다 파싱 가능
+    // preferredDays, duration은 PromiseEntity DB 필드에 추가해서 백업
+    @PutMapping("/refresh/{icsFileName}/{promiseUid}")
+    public ResponseEntity<?> refresh(@PathVariable("icsFileName") String icsFileName,
+                                     @PathVariable("promiseUid") String promiseUid,
+                                     @RequestBody String component) throws IOException, ParseException, URISyntaxException {
+        cleanupPromiseDataForRefresh(promiseUid);
+        HttpHeaders headers = makeCaldavHeader();
+
+        PromiseEntity promise = promiseService.findByPromiseUid(promiseUid);
+
+        CaldavDTO.Precondition precondition = new CaldavDTO.Precondition(List.of(promise.getPreferredDays().split(",")),
+                promise.getDtStart().format(DateTimeFormatter.ofPattern("yyyyMMdd'T'HHmmss'Z'")),
+                promise.getDtEnd().format(DateTimeFormatter.ofPattern("yyyyMMdd'T'HHmmss'Z'")),
+                promise.getDuration(), promise.getUid());
+
+        return ResponseEntity.status(HttpStatus.OK).headers(headers).body(CaldavDTO.setPreferenceValue
+                (preferenceService.create(icsFileName, precondition), promise));
+    }
 
     // 약속 삭제 API
     // Promise 테이블 삭제 -> promiseService 4
@@ -199,7 +210,6 @@ public class PreferenceController {
     @DeleteMapping("/{promiseUid}")
     public ResponseEntity<?> deletePromise(@PathVariable("promiseUid") String promiseUid) {
         try {
-            preferenceService.deletePreferences(promiseUid);
             cleanupPromiseData(promiseUid);
             return ResponseEntity.status(HttpStatus.NO_CONTENT).body(null);
         }
@@ -218,6 +228,7 @@ public class PreferenceController {
             PreferenceEntity preference = dto.toPreferenceEntity(dto);
             preference.setPromiseUid(promiseUid);
             preference.setLikes(0);
+            preference.setType(PREFERENCETYPE.CUSTOM.name());
             boolean duplicateTest = preferenceService.duplicateTest(preference);
             boolean permissionTest = preferenceService.permissionTest(preference.getPromiseUid(), userId);
             if (duplicateTest && permissionTest) {
@@ -236,8 +247,7 @@ public class PreferenceController {
     @DeleteMapping("/custom/{preferenceUid}")
     public ResponseEntity<?> deleteCustomPreference(@PathVariable("preferenceUid") String preferenceUid) {
         try {
-            preferenceService.deletePreferences(promiseUid);
-            cleanupPromiseData(promiseUid);
+            preferenceService.deleteCustomPreference(preferenceUid);
             return ResponseEntity.status(HttpStatus.NO_CONTENT).body(null);
         }
         catch (Exception e) {
@@ -246,10 +256,25 @@ public class PreferenceController {
     }
 
     public void cleanupPromiseData(String promiseUid) {
+        // appointment Block 삭제
         preferenceService.deleteAppointmentBlocks(promiseUid);
+        // 투표 현황 삭제
         voteService.deleteVotes(promiseUid);
+        // 추천 삭제
+        preferenceService.deletePreferences(promiseUid);
+        // 약속 삭제
         promiseService.deletePromise(promiseUid);
     }
+
+    public void cleanupPromiseDataForRefresh(String promiseUid) {
+        // appointment Block 삭제
+        preferenceService.deleteAppointmentBlocks(promiseUid);
+        // 투표 현황 삭제
+        voteService.deleteVotes(promiseUid);
+        // 추천 삭제
+        preferenceService.deletePreferences(promiseUid);
+    }
+
 
     private HttpHeaders makeCaldavHeader() {
         HttpHeaders headers = new HttpHeaders();

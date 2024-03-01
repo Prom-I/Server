@@ -99,8 +99,8 @@ public class CaldavDTO {
                 .uid(calendar.getComponent("VEVENT").getProperty(Property.UID).getValue())
                 .dtStart(LocalDateTime.parse(calendar.getComponent("VEVENT").getProperty(Property.DTSTART).getValue(), DateTimeFormatter.ofPattern("yyyyMMdd'T'HHmmss'Z'")))
                 .dtEnd( LocalDateTime.parse(calendar.getComponent("VEVENT").getProperty(Property.DTEND).getValue(), DateTimeFormatter.ofPattern("yyyyMMdd'T'HHmmss'Z'")))
-                .location(calendar.getComponent("VEVENT").getProperty(Property.LOCATION) != null ?
-                        calendar.getComponent("VEVENT").getProperty(Property.LOCATION).getValue() : "")
+//                .location(calendar.getComponent("VEVENT").getProperty(Property.LOCATION) != null ?
+//                        calendar.getComponent("VEVENT").getProperty(Property.LOCATION).getValue() : "")
 //                .duration(calendar.getComponent("VEVENT").getProperty(Property.DURATION).getValue())
 //                .startScope(calendar.getComponent("VEVENT").getProperty(Property.EXPERIMENTAL_PREFIX + "STARTSCOPE").getValue())
 //                .endScope(calendar.getComponent("VEVENT").getProperty(Property.EXPERIMENTAL_PREFIX + "ENDSCOPE").getValue())
@@ -224,10 +224,10 @@ public class CaldavDTO {
         List<String> preferredDays;
         String startScope;
         String endScope;
-        String duration;
+        int duration;
         String promiseUid;
 
-    public Precondition(List<String> preferredDays, String startScope, String endScope, String duration, String promiseUid) {
+    public Precondition(List<String> preferredDays, String startScope, String endScope, int duration, String promiseUid) {
         this.preferredDays = preferredDays;
         this.startScope = startScope;
         this.endScope = endScope;
@@ -247,7 +247,7 @@ public class CaldavDTO {
         return endScope;
     }
 
-    public String getDuration() {
+    public int getDuration() {
         return duration;
     }
 
